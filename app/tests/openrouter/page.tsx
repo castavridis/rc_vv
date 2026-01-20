@@ -5,7 +5,7 @@ const openRouter = new OpenRouter({
 })
 
 const completion = await openRouter.chat.send({
-  model: 'qwen3-vl-235b-a22b-instruct',
+  model: 'qwen/qwen3-vl-235b-a22b-instruct',
   messages: [
     {
       role: 'user',
