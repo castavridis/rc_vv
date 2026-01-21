@@ -1,10 +1,11 @@
 'use client'
 import { useState } from 'react'
 import { useForm, SubmitHandler } from 'react-hook-form'
-import rateImage from '../actions/rateImage'
+import rateInput from '../actions/rateInput'
 
 type Inputs = {
-  imgUrl: string
+  imgUrl?: string
+  text?: string
 }
 export default function UploadForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -16,16 +17,31 @@ export default function UploadForm() {
   } = useForm<Inputs>()
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     setIsLoading(true)
-    const response = await rateImage(data.imgUrl)
-    setResult(response)
+    let payload = ""
+    let type: "text" | "image" = "image"
+    if (data.imgUrl) {
+      payload = data.imgUrl
+      type = "image"
+    } else if (data.text) {
+      payload = data.text
+      type = "text"
+    }
+    if (payload.length > 0) {
+      const response = await rateInput(payload, type)
+      setResult(response)
+    }
     setIsLoading(false)
   }
   const imgSrc = watch("imgUrl")
+  const text = watch("text")
+  let hasInput = (imgSrc && imgSrc.length > 0) || (text && text.length > 0)
   return (
     <div>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="flex gap-4">
+        <div className="w-full max-w-full flex gap-4">
           <div className="w-full border-2 border-zinc-200 rounded-md p-12">
+            <p className="font-bold">Text input</p>
+            <textarea placeholder="Long-form text here" className="py-1.5 px-3 border-2 border-zinc-200 rounded-md mb-4" {...register("text")} />
             <p className="font-bold">Image preview</p>
             <label className="block">
               Paste a valid URL below.<br/>
@@ -64,9 +80,9 @@ export default function UploadForm() {
               <div className="border-t-2 border-zinc-200 mt-8 pt-8">
                 <p className="font-bold">Qwen3 VL 235B A22B Instruct Assessment</p>
                 <button 
-                disabled={!imgSrc}
+                disabled={!hasInput}
                 className="rounded-md bg-green-300 disabled:border-red-300 disabled:border-2 disabled:bg-red-200 py-1.5 px-3">
-                  {!imgSrc ? "Waiting for image..." : "Analyze Image"}
+                  {!hasInput ? "Waiting for input..." : "Analyze input"}
                 </button>
                 { isLoading && <div>Analyzing...</div>}
                 { result && <pre className="mt-2 border-2 border-zinc-200 p-4 text-zinc-700">{result.message.content}</pre> }

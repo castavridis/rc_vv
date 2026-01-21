@@ -6,13 +6,14 @@ const openRouter = new OpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 })
 
-export default async function rateImage(imgUrl: string) {
+export default async function rateInput(text: string, type: 'image' | 'text') {
+  const preset = type ? 'brand-rater' : 'text-rater'
   const completion = await openRouter.chat.send({
-    model: 'qwen/qwen3-vl-235b-a22b-instruct@preset/brand-rater',
+    model: `qwen/qwen3-vl-235b-a22b-instruct@preset/${preset}`,
     messages: [
       {
         role: 'user',
-        content: imgUrl,
+        content: text,
       }
     ],
     stream: false,
