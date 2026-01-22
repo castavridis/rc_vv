@@ -125,8 +125,7 @@ export default function BrandMaskVisualization({
     <div className={className}>
       <div
         ref={containerRef}
-        className="relative overflow-hidden rounded-xl shadow-2xl bg-zinc-900"
-        style={{ width: 500, height: 500 }}
+        className="absolute inset-0 overflow-hidden rounded-xl shadow-2xl bg-zinc-900"
       >
         {/* Base background */}
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900" />

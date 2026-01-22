@@ -21,13 +21,8 @@ export default function MaskLayer({ config, isAnimating }: MaskLayerProps) {
 
   return (
     <div
-      className="overflow-hidden"
+      className="absolute inset-0 overflow-hidden"
       style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: 500,
-        height: 500,
         backgroundColor: color,
         zIndex,
         maskImage,
