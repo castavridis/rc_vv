@@ -1,3 +1,4 @@
+import UserNav from './components/UserNav'
 import './globals.css'
 
 import dotenv from 'dotenv'
@@ -11,6 +12,7 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body>
+        <UserNav />
         { children }
       </body>
 		</html>
