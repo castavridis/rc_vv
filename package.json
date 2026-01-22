@@ -7,6 +7,7 @@
     "lint:fix": "eslint --fix"
   },
   "dependencies": {
+    "@observablehq/plot": "^0.6.17",
     "@openrouter/sdk": "^0.3.15",
     "@supabase/supabase-js": "^2.91.0",
     "@tailwindcss/postcss": "^4.1.18",

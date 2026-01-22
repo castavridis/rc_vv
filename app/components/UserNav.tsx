@@ -1,13 +1,14 @@
 import { getUser } from '@/app/lib/auth/session'
-import LoginButton from './LoginButton'
+// import LoginButton from './LoginButton'
 
 export default async function UserNav() {
   const user = await getUser()
 
   if (!user) {
-    return (
-      <LoginButton />
-    )
+    return 
+    // (
+      // <LoginButton />
+    // )
   }
 
   return (
