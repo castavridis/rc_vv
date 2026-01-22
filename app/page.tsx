@@ -2,6 +2,7 @@ import { getUser } from './lib/auth/session';
 import LoginButton from './components/LoginButton';
 import UploadForm from './components/UploadForm';
 import RadarChart from './components/RadarChart';
+import BrandMaskVisualization from './components/BrandMaskVisualization';
 
 const sampleRadarData = {
   "Sincerity": 5,
@@ -34,6 +35,12 @@ export default async function Page() {
                 height={400}
                 fillColor="#22c55e"
                 className="mx-auto mt-8"
+              />
+              <h2 className="text-xl font-semibold mt-12 mb-4">Brand Dimensions Visualization</h2>
+              <BrandMaskVisualization
+                autoPlay={true}
+                animationDuration={8}
+                className="mx-auto"
               />
             </div>
       }
