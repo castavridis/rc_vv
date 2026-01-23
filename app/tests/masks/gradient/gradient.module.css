@@ -1,0 +1,57 @@
+:root {
+  /* via colorffy */
+  --_noise-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'><defs><filter id='n' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.3' numOctaves='3' stitchTiles='stitch' result='t'/><feColorMatrix type='saturate' values='0' in='t' result='g'/><feComponentTransfer in='g' result='a'><feFuncA type='linear' slope='0.5'/></feComponentTransfer></filter></defs><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --_noise-size: 6.5%;
+
+  --sincerity-gradient:
+    radial-gradient(at 9.6% 8.8%, #000000 0px, transparent 50%), radial-gradient(at 40.1% 6.9%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 10% 42.3%, #0000FF 0px, transparent 50%);
+  --sincerity-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='12px' width='953px'><text rotate='30' x='0' y='6' fill='black' font-size='12' font-family='monospace'>down-to-earth · family oriented · small-town · honest · sincere · real · wholesome · original · cheerful · sentimental · friendly · </text></svg>");
+
+  --excitement-gradient:
+    radial-gradient(at 90.5% 9.7%, #000000 0px, transparent 50%), radial-gradient(at 90.2% 41.2%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 55% 10.9%, #0000FF 0px, transparent 50%);
+
+  --competence-gradient:
+    radial-gradient(at 93.7% 90.8%, #000000 0px, transparent 50%), radial-gradient(at 75.8% 90.9%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 89.1% 44.9%, #0000FF 0px, transparent 50%);
+
+  --sophistication-gradient: 
+    radial-gradient(at 48.4% 93.6%, #000000 0px, transparent 50%), radial-gradient(at 24.5% 94.7%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 71.7% 93.6%, #0000FF 0px, transparent 50%);
+
+  --ruggedness-gradient:
+    radial-gradient(at 8.1% 89.8%, #000000 0px, transparent 50%), radial-gradient(at 6.9% 40.4%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 31.4% 90.4%, #0000FF 0px, transparent 50%);
+}
+
+.noise {
+  background-image: var(--_noise-texture);
+  background-size: var(--_noise-size);
+  background-position: center;
+  background-repeat: repeat;
+}
+
+.debug {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.sincerity.debug {
+  background-image: var(--sincerity-gradient);
+}
+.excitement.debug {
+  background-image: var(--excitement-gradient);
+}
+.competence.debug {
+  background-image: var(--competence-gradient);
+}
+.sophistication.debug {
+  background-image: var(--sophistication-gradient);
+}
+.ruggedness.debug {
+  background-image: var(--ruggedness-gradient);
+}
+
+.sincerity {
+  background-image: var(--sincerity-bg-image);
+  background-color: tan;
+  mask-image: var(--sincerity-gradient);
+  mask-type: alpha;
+  background-repeat: repeat;
+}
