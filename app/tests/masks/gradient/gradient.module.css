@@ -1,23 +1,33 @@
 :root {
   /* via colorffy */
-  --_noise-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'><defs><filter id='n' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.3' numOctaves='3' stitchTiles='stitch' result='t'/><feColorMatrix type='saturate' values='0' in='t' result='g'/><feComponentTransfer in='g' result='a'><feFuncA type='linear' slope='0.5'/></feComponentTransfer></filter></defs><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --_noise-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'><defs><filter id='n' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.4' numOctaves='4' stitchTiles='stitch' result='t'/><feColorMatrix type='saturate' values='0' in='t' result='g'/><feComponentTransfer in='g' result='a'><feFuncA type='linear' slope='0.35'/></feComponentTransfer></filter></defs><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   --_noise-size: 6.5%;
 
   --sincerity-gradient:
-    radial-gradient(at 9.6% 8.8%, #000000 0px, transparent 50%), radial-gradient(at 40.1% 6.9%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 10% 42.3%, #0000FF 0px, transparent 50%);
-  --sincerity-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='12px' width='953px'><text rotate='30' x='0' y='6' fill='black' font-size='12' font-family='monospace'>down-to-earth · family oriented · small-town · honest · sincere · real · wholesome · original · cheerful · sentimental · friendly · </text></svg>");
+    radial-gradient(ellipse at top left, #000A, transparent 50%);
+    /* radial-gradient(at 9.6% 8.8%, #000000 0px, transparent 50%), radial-gradient(at 40.1% 6.9%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 10% 42.3%, #0000FF 0px, transparent 50%); */
+  --sincerity-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='16px' width='656px'><text x='0' y='12' fill='black' font-size='12' font-family='sans-serif'>down-to-earth · family oriented · small-town · honest · sincere · real · wholesome · original · cheerful · sentimental · friendly · </text></svg>");
 
   --excitement-gradient:
-    radial-gradient(at 90.5% 9.7%, #000000 0px, transparent 50%), radial-gradient(at 90.2% 41.2%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 55% 10.9%, #0000FF 0px, transparent 50%);
+    radial-gradient(ellipse at top right, #000A, transparent 50%);
+    /* radial-gradient(at 90.5% 9.7%, #000000 0px, transparent 50%), radial-gradient(at 90.2% 41.2%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 55% 10.9%, #0000FF 0px, transparent 50%); */
+  --excitement-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='12px' width='865px'><text rotate='30' x='0' y='6' fill='black' font-size='12' font-family='monospace'><animateTransform attributeName='transform' attributeType='XML' type='rotate' from='-10 60 70' to='10 60 70' dur='1.25s' repeatCount='indefinite' />daring · trendy · exciting · spirited · cool · young · imaginative · unique · up-to-date · independent · contemporary · </text></svg>");
 
   --competence-gradient:
-    radial-gradient(at 93.7% 90.8%, #000000 0px, transparent 50%), radial-gradient(at 75.8% 90.9%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 89.1% 44.9%, #0000FF 0px, transparent 50%);
+    radial-gradient(ellipse at bottom right, #000A, transparent 50%);
+    /* radial-gradient(at 93.7% 90.8%, #000000 0px, transparent 50%), radial-gradient(at 75.8% 90.9%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 89.1% 44.9%, #0000FF 0px, transparent 50%); */
+  --competence-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='475px'><text rotate='0' x='0' y='12' fill='white' font-size='12' font-family='serif'>reliable · hard working · secure · intelligent · technical · corporate · successful · leader · confident · </text></svg>");
 
   --sophistication-gradient: 
-    radial-gradient(at 48.4% 93.6%, #000000 0px, transparent 50%), radial-gradient(at 24.5% 94.7%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 71.7% 93.6%, #0000FF 0px, transparent 50%);
+    radial-gradient(ellipse at center, #000A, transparent 50%);
+    /* radial-gradient(at 48.4% 93.6%, #000000 0px, transparent 50%), radial-gradient(at 24.5% 94.7%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 71.7% 93.6%, #0000FF 0px, transparent 50%); */
+  --sophistication-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='380px'><text rotate='0' x='0' y='12' fill='white' font-size='12' font-family='sans-serif'>upper class · glamorous · good looking · charming · feminine · smooth · </text></svg>");
 
   --ruggedness-gradient:
-    radial-gradient(at 8.1% 89.8%, #000000 0px, transparent 50%), radial-gradient(at 6.9% 40.4%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 31.4% 90.4%, #0000FF 0px, transparent 50%);
+    radial-gradient(ellipse at bottom left, #000A, transparent 50%);
+    /* radial-gradient(circle at 0% 100%, #00000055 0px, transparent 25%), radial-gradient(at 25% 65.4%, #FF000044 0px, transparent 30%), radial-gradient(circle at 40% 45%, #00FF0033 0px, transparent 20%); */
+
+  --ruggedness-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='240px'><text rotate='0' x='0' y='12' fill='black' font-size='12' font-family='serif'>outdoorsy · masculine · western · tough · rugged · </text></svg>");
 }
 
 .noise {
@@ -52,6 +62,34 @@
   background-image: var(--sincerity-bg-image);
   background-color: tan;
   mask-image: var(--sincerity-gradient);
+  mask-type: alpha;
+  background-repeat: repeat;
+}
+.excitement {
+  background-image: var(--excitement-bg-image);
+  background-color: red;
+  mask-image: var(--excitement-gradient);
+  mask-type: alpha;
+  background-repeat: repeat;
+}
+.competence {
+  background-image: var(--competence-bg-image);
+  background-color: blue;
+  mask-image: var(--competence-gradient);
+  mask-type: alpha;
+  background-repeat: repeat;
+}
+.sophistication {
+  background-image: var(--sophistication-bg-image);
+  background-color: black;
+  mask-image: var(--sophistication-gradient);
+  mask-type: alpha;
+  background-repeat: repeat;
+}
+.ruggedness {
+  background-image: var(--ruggedness-bg-image);
+  background-color: yellow;
+  mask-image: var(--ruggedness-gradient);
   mask-type: alpha;
   background-repeat: repeat;
 }
