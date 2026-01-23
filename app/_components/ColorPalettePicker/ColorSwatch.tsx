@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { ColorSwatchProps } from "./types";
 
-export function ColorSwatch({ color, maxScore, onClick }: ColorSwatchProps) {
+export function ColorSwatch({ color, maxScore, onClick, showTraitsFacets }: ColorSwatchProps) {
   const [copied, setCopied] = useState(false);
 
   const handleClick = async () => {
@@ -72,6 +72,36 @@ export function ColorSwatch({ color, maxScore, onClick }: ColorSwatchProps) {
         <p className="text-xs text-zinc-400 mt-1.5">
           {color.occurrences} {color.occurrences === 1 ? "match" : "matches"}
         </p>
+
+        {/* Traits and Facets */}
+        {showTraitsFacets && (color.relevantFacets?.length || color.relevantTraits?.length) && (
+          <div className="mt-2 pt-2 border-t border-zinc-100">
+            {color.relevantFacets && color.relevantFacets.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-1">
+                {color.relevantFacets.map((facet) => (
+                  <span
+                    key={facet.name}
+                    className="px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-zinc-200 text-zinc-700"
+                  >
+                    {facet.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {color.relevantTraits && color.relevantTraits.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {color.relevantTraits.map((trait) => (
+                  <span
+                    key={trait.name}
+                    className="px-1.5 py-0.5 text-[10px] rounded-full bg-zinc-100 text-zinc-500"
+                  >
+                    {trait.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </button>
   );

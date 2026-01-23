@@ -2,7 +2,9 @@
 
 import { useMemo } from "react";
 import { ColorSwatch } from "./ColorSwatch";
-import type { ColorGridProps } from "./types";
+import { getColorById } from "@/app/_lib/colors-data";
+import { getHierarchyForTrait, getFacetsForDimension } from "@/app/_lib/color-types";
+import type { ColorGridProps, EnrichedColorEntry } from "./types";
 
 export function ColorGrid({
   colors,
@@ -10,11 +12,38 @@ export function ColorGrid({
   showingAll,
   onShowAll,
   onColorClick,
+  selectedDimension,
+  selectedFacet,
 }: ColorGridProps) {
   const maxScore = useMemo(() => {
     if (colors.length === 0) return 1;
     return Math.max(...colors.map((c) => c.score));
   }, [colors]);
+
+  // Show traits/facets only at dimension level (dimension selected, no facet selected)
+  const showTraitsFacets = selectedDimension && !selectedFacet;
+
+  // Enrich colors with relevant traits/facets when at dimension level
+  const enrichedColors = useMemo((): EnrichedColorEntry[] => {
+    if (!showTraitsFacets || !selectedDimension) return colors;
+
+    const dimensionFacets = new Set(getFacetsForDimension(selectedDimension));
+
+    return colors.map((color) => {
+      const fullColorData = getColorById(color.colorId);
+      if (!fullColorData) return color;
+
+      const relevantTraits = fullColorData.traitSummary
+        .filter((t) => getHierarchyForTrait(t.name)?.dimension === selectedDimension)
+        .slice(0, 3);
+
+      const relevantFacets = fullColorData.facetSummary
+        .filter((f) => dimensionFacets.has(f.name))
+        .slice(0, 2);
+
+      return { ...color, relevantTraits, relevantFacets };
+    });
+  }, [colors, selectedDimension, showTraitsFacets]);
 
   if (colors.length === 0) {
     return (
@@ -29,12 +58,13 @@ export function ColorGrid({
     <div>
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {colors.map((color) => (
+        {enrichedColors.map((color) => (
           <ColorSwatch
             key={color.colorId}
             color={color}
             maxScore={maxScore}
             onClick={() => onColorClick(color)}
+            showTraitsFacets={showTraitsFacets}
           />
         ))}
       </div>

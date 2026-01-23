@@ -172,6 +172,8 @@ export function ColorPalettePicker({
           showingAll={showAllColors}
           onShowAll={handleShowAll}
           onColorClick={handleColorClick}
+          selectedDimension={selectedDimension}
+          selectedFacet={selectedFacet}
         />
       )}
     </div>

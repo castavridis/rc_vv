@@ -1,4 +1,9 @@
-import type { Dimension, Facet, Trait, ColorTraitEntry } from "@/app/_lib/color-types";
+import type { Dimension, Facet, Trait, ColorTraitEntry, TraitScoreEntry, FacetScoreEntry } from "@/app/_lib/color-types";
+
+export interface EnrichedColorEntry extends ColorTraitEntry {
+  relevantTraits?: TraitScoreEntry[];
+  relevantFacets?: FacetScoreEntry[];
+}
 
 export interface ColorPalettePickerProps {
   /** Initial dimension to display */
@@ -33,12 +38,15 @@ export interface ColorGridProps {
   showingAll: boolean;
   onShowAll: () => void;
   onColorClick: (color: ColorTraitEntry) => void;
+  selectedDimension: Dimension | null;
+  selectedFacet: Facet | null;
 }
 
 export interface ColorSwatchProps {
-  color: ColorTraitEntry;
+  color: EnrichedColorEntry;
   maxScore: number;
   onClick: () => void;
+  showTraitsFacets?: boolean;
 }
 
 export interface BreadcrumbNavProps {
