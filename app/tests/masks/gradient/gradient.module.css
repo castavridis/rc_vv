@@ -1,31 +1,36 @@
+/* Register animatable custom properties for gradient positions and sizes */
+@property --sincerity-x { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+@property --sincerity-y { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+@property --sincerity-size { syntax: "<percentage>"; inherits: false; initial-value: 50%; }
+
+@property --excitement-x { syntax: "<percentage>"; inherits: false; initial-value: 100%; }
+@property --excitement-y { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+@property --excitement-size { syntax: "<percentage>"; inherits: false; initial-value: 50%; }
+
+@property --competence-x { syntax: "<percentage>"; inherits: false; initial-value: 100%; }
+@property --competence-y { syntax: "<percentage>"; inherits: false; initial-value: 100%; }
+@property --competence-size { syntax: "<percentage>"; inherits: false; initial-value: 50%; }
+
+@property --sophistication-x { syntax: "<percentage>"; inherits: false; initial-value: 50%; }
+@property --sophistication-y { syntax: "<percentage>"; inherits: false; initial-value: 50%; }
+@property --sophistication-size { syntax: "<percentage>"; inherits: false; initial-value: 50%; }
+
+@property --ruggedness-x { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+@property --ruggedness-y { syntax: "<percentage>"; inherits: false; initial-value: 100%; }
+@property --ruggedness-size { syntax: "<percentage>"; inherits: false; initial-value: 50%; }
+
 :root {
   /* via colorffy */
   --_noise-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'><defs><filter id='n' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.4' numOctaves='4' stitchTiles='stitch' result='t'/><feColorMatrix type='saturate' values='0' in='t' result='g'/><feComponentTransfer in='g' result='a'><feFuncA type='linear' slope='0.35'/></feComponentTransfer></filter></defs><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   --_noise-size: 6.5%;
 
-  --sincerity-gradient:
-    radial-gradient(ellipse at top left, #000A, transparent 50%);
-    /* radial-gradient(at 9.6% 8.8%, #000000 0px, transparent 50%), radial-gradient(at 40.1% 6.9%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 10% 42.3%, #0000FF 0px, transparent 50%); */
-  --sincerity-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='16px' width='656px'><text x='0' y='12' fill='black' font-size='12' font-family='sans-serif'>down-to-earth · family oriented · small-town · honest · sincere · real · wholesome · original · cheerful · sentimental · friendly · </text></svg>");
+  --sincerity-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='16px' width='656px'><text opacity='0.3' x='0' y='12' fill='brown' font-size='12' font-family='sans-serif'>down-to-earth · family oriented · small-town · honest · sincere · real · wholesome · original · cheerful · sentimental · friendly · </text></svg>");
 
-  --excitement-gradient:
-    radial-gradient(ellipse at top right, #000A, transparent 50%);
-    /* radial-gradient(at 90.5% 9.7%, #000000 0px, transparent 50%), radial-gradient(at 90.2% 41.2%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 55% 10.9%, #0000FF 0px, transparent 50%); */
-  --excitement-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='12px' width='865px'><text rotate='30' x='0' y='6' fill='black' font-size='12' font-family='monospace'><animateTransform attributeName='transform' attributeType='XML' type='rotate' from='-10 60 70' to='10 60 70' dur='1.25s' repeatCount='indefinite' />daring · trendy · exciting · spirited · cool · young · imaginative · unique · up-to-date · independent · contemporary · </text></svg>");
+  --excitement-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='12px' width='865px'><text rotate='30' x='0' y='6' fill='purple' font-size='12' font-family='monospace'><animateTransform attributeName='transform' attributeType='XML' type='rotate' from='-10 60 70' to='10 60 70' dur='1.25s' repeatCount='indefinite' />daring · trendy · exciting · spirited · cool · young · imaginative · unique · up-to-date · independent · contemporary · </text></svg>");
 
-  --competence-gradient:
-    radial-gradient(ellipse at bottom right, #000A, transparent 50%);
-    /* radial-gradient(at 93.7% 90.8%, #000000 0px, transparent 50%), radial-gradient(at 75.8% 90.9%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 89.1% 44.9%, #0000FF 0px, transparent 50%); */
   --competence-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='475px'><text rotate='0' x='0' y='12' fill='white' font-size='12' font-family='serif'>reliable · hard working · secure · intelligent · technical · corporate · successful · leader · confident · </text></svg>");
 
-  --sophistication-gradient: 
-    radial-gradient(ellipse at center, #000A, transparent 50%);
-    /* radial-gradient(at 48.4% 93.6%, #000000 0px, transparent 50%), radial-gradient(at 24.5% 94.7%, #FF0000 0px, transparent 50%), radial-gradient(at 47.1% 45.5%, #00FF00 0px, transparent 50%), radial-gradient(at 71.7% 93.6%, #0000FF 0px, transparent 50%); */
-  --sophistication-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='380px'><text rotate='0' x='0' y='12' fill='white' font-size='12' font-family='sans-serif'>upper class · glamorous · good looking · charming · feminine · smooth · </text></svg>");
-
-  --ruggedness-gradient:
-    radial-gradient(ellipse at bottom left, #000A, transparent 50%);
-    /* radial-gradient(circle at 0% 100%, #00000055 0px, transparent 25%), radial-gradient(at 25% 65.4%, #FF000044 0px, transparent 30%), radial-gradient(circle at 40% 45%, #00FF0033 0px, transparent 20%); */
+  --sophistication-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='380px'><text rotate='0' x='0' y='12' fill='slateblue' font-size='12' font-family='sans-serif'>upper class · glamorous · good looking · charming · feminine · smooth · </text></svg>");
 
   --ruggedness-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='240px'><text rotate='0' x='0' y='12' fill='black' font-size='12' font-family='serif'>outdoorsy · masculine · western · tough · rugged · </text></svg>");
 }
@@ -43,53 +48,174 @@
   z-index: 1;
 }
 .sincerity.debug {
-  background-image: var(--sincerity-gradient);
+  background-image: radial-gradient(ellipse at var(--sincerity-x) var(--sincerity-y), #000A, transparent var(--sincerity-size));
+  animation: sincerity-pulse 6s ease-in-out infinite;
 }
 .excitement.debug {
-  background-image: var(--excitement-gradient);
+  background-image: radial-gradient(ellipse at var(--excitement-x) var(--excitement-y), #000A, transparent var(--excitement-size));
+  animation: excitement-bounce 2.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
 }
 .competence.debug {
-  background-image: var(--competence-gradient);
+  background-image: radial-gradient(ellipse at var(--competence-x) var(--competence-y), #000A, transparent var(--competence-size));
+  animation: competence-scan 5s linear infinite;
 }
 .sophistication.debug {
-  background-image: var(--sophistication-gradient);
+  background-image: radial-gradient(ellipse at var(--sophistication-x) var(--sophistication-y), #000A, transparent var(--sophistication-size));
+  animation: sophistication-flow 7s ease infinite;
 }
 .ruggedness.debug {
-  background-image: var(--ruggedness-gradient);
+  background-image: radial-gradient(ellipse at var(--ruggedness-x) var(--ruggedness-y), #000A, transparent var(--ruggedness-size));
+  animation: ruggedness-shake 4s ease-out infinite;
 }
 
 .sincerity {
-  background-image: var(--sincerity-bg-image);
-  background-color: tan;
-  mask-image: var(--sincerity-gradient);
+  background-image:
+    var(--sincerity-bg-image),
+    linear-gradient(to right, #FFC0CBFF, #F5F5DCFF);
+  mask-image: radial-gradient(ellipse at var(--sincerity-x) var(--sincerity-y), #000A, transparent var(--sincerity-size));
   mask-type: alpha;
   background-repeat: repeat;
+  animation: sincerity-pulse 6s ease-in-out infinite;
 }
 .excitement {
-  background-image: var(--excitement-bg-image);
-  background-color: red;
-  mask-image: var(--excitement-gradient);
+  background-image:
+    var(--excitement-bg-image),
+    linear-gradient(to right, #DFFF00, #E0B0FF);
+  mask-image: radial-gradient(ellipse at var(--excitement-x) var(--excitement-y), #000A, transparent var(--excitement-size));
   mask-type: alpha;
   background-repeat: repeat;
+  animation: excitement-bounce 10s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
 }
 .competence {
-  background-image: var(--competence-bg-image);
-  background-color: blue;
-  mask-image: var(--competence-gradient);
+  background-image:
+    var(--competence-bg-image),
+    linear-gradient(to right, #0000FF, #4B0082);
+  mask-image: radial-gradient(ellipse at var(--competence-x) var(--competence-y), #000A, transparent var(--competence-size));
   mask-type: alpha;
   background-repeat: repeat;
+  animation: competence-scan 5s linear infinite;
 }
 .sophistication {
   background-image: var(--sophistication-bg-image);
   background-color: black;
-  mask-image: var(--sophistication-gradient);
+  mask-image: radial-gradient(ellipse at var(--sophistication-x) var(--sophistication-y), #000A, transparent var(--sophistication-size));
   mask-type: alpha;
   background-repeat: repeat;
+  animation: sophistication-flow 15s ease infinite;
 }
 .ruggedness {
-  background-image: var(--ruggedness-bg-image);
-  background-color: yellow;
-  mask-image: var(--ruggedness-gradient);
+  background-image: 
+    var(--ruggedness-bg-image),
+    linear-gradient(to right, #483C32, #CD7F32);
+  mask-image: radial-gradient(ellipse at var(--ruggedness-x) var(--ruggedness-y), #000A, transparent var(--ruggedness-size));
   mask-type: alpha;
   background-repeat: repeat;
+  animation: ruggedness-shake 4s ease-out infinite;
+}
+
+/* Dimension-specific gradient animations */
+
+/* Sincerity - warm heartbeat pulse */
+@keyframes sincerity-pulse {
+  0%, 100% {
+    --sincerity-x: 0%;
+    --sincerity-y: 0%;
+    --sincerity-size: 50%;
+  }
+  50% {
+    --sincerity-x: 10%;
+    --sincerity-y: 10%;
+    --sincerity-size: 65%;
+  }
+}
+
+/* Excitement - energetic bouncing */
+@keyframes excitement-bounce {
+  0% {
+    --excitement-x: 100%;
+    --excitement-y: 0%;
+    --excitement-size: 50%;
+  }
+  25% {
+    --excitement-x: 80%;
+    --excitement-y: 10%;
+    --excitement-size: 60%;
+  }
+  50% {
+    --excitement-x: 100%;
+    --excitement-y: 5%;
+    --excitement-size: 45%;
+  }
+  75% {
+    --excitement-x: 85%;
+    --excitement-y: 5%;
+    --excitement-size: 58%;
+  }
+  100% {
+    --excitement-x: 100%;
+    --excitement-y: 0%;
+    --excitement-size: 50%;
+  }
+}
+
+/* Competence - precise horizontal scan */
+@keyframes competence-scan {
+  0%, 100% {
+    --competence-x: 100%;
+    --competence-y: 100%;
+    --competence-size: 50%;
+  }
+  50% {
+    --competence-x: 80%;
+    --competence-y: 80%;
+    --competence-size: 60%;
+  }
+}
+
+/* Sophistication - elegant arc flow */
+@keyframes sophistication-flow {
+  0%, 100% {
+    --sophistication-x: 50%;
+    --sophistication-y: 50%;
+    --sophistication-size: 50%;
+  }
+  33% {
+    --sophistication-x: 40%;
+    --sophistication-y: 40%;
+    --sophistication-size: 58%;
+  }
+  66% {
+    --sophistication-x: 60%;
+    --sophistication-y: 60%;
+    --sophistication-size: 55%;
+  }
+}
+
+/* Ruggedness - rugged shake */
+@keyframes ruggedness-shake {
+  0%, 100% {
+    --ruggedness-x: 0%;
+    --ruggedness-y: 100%;
+    --ruggedness-size: 50%;
+  }
+  20% {
+    --ruggedness-x: 2%;
+    --ruggedness-y: 98%;
+    --ruggedness-size: 53%;
+  }
+  40% {
+    --ruggedness-x: -1%;
+    --ruggedness-y: 100%;
+    --ruggedness-size: 50%;
+  }
+  60% {
+    --ruggedness-x: 3%;
+    --ruggedness-y: 97%;
+    --ruggedness-size: 54%;
+  }
+  80% {
+    --ruggedness-x: 0%;
+    --ruggedness-y: 99%;
+    --ruggedness-size: 51%;
+  }
 }
