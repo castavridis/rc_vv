@@ -1,8 +1,8 @@
-import { getUser } from './lib/auth/session';
-import LoginButton from './components/LoginButton';
-import UploadForm from './components/UploadForm';
-import RadarChart from './components/RadarChart';
-import BrandMaskVisualization from './components/BrandMaskVisualization';
+import { getUser } from './_lib/auth/session';
+import LoginButton from './_components/LoginButton';
+import UploadForm from './_components/UploadForm';
+import RadarChart from './_components/RadarChart';
+import BrandMaskVisualization from './_components/BrandMaskVisualization';
 
 const sampleRadarData = {
   "Sincerity": 5,
@@ -41,11 +41,12 @@ export default async function Page() {
               </div>
         }
       </div>
-      <BrandMaskVisualization
+
+      {/* <BrandMaskVisualization
         autoPlay={true}
         animationDuration={8}
         className="mx-auto absolute inset-0 -z-10"
-      />
+      /> */}
     </div>
   )
 }

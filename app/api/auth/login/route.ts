@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { buildAuthorizationUrl } from '@/app/lib/auth/rc-oauth'
+import { buildAuthorizationUrl } from '@/app/_lib/auth/rc-oauth'
 
 const STATE_COOKIE_NAME = 'oauth_state'
 const STATE_MAX_AGE = 60 * 10 // 10 minutes

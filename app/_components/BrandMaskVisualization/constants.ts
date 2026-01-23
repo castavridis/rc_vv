@@ -1,4 +1,4 @@
-import { Dimension, DIMENSIONS } from '@/app/lib/brand';
+import { Dimension, DIMENSIONS } from '@/app/_lib/brand';
 import { LayerConfig } from './types';
 
 export const DIMENSION_COLORS: Record<Dimension, string> = {

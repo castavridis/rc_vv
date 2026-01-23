@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { getFacetsForDimension } from '@/app/lib/brand';
+import { getFacetsForDimension } from '@/app/_lib/brand';
 import { MaskLayerProps } from './types';
 
 export default function MaskLayer({ config, isAnimating }: MaskLayerProps) {

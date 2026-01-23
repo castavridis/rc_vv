@@ -1,4 +1,4 @@
-import { Dimension } from '@/app/lib/brand';
+import { Dimension } from '@/app/_lib/brand';
 
 export interface GradientSpot {
   id: string;

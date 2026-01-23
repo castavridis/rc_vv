@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useForm, SubmitHandler } from 'react-hook-form'
-import rateInput from '../actions/rateInput'
+import rateInput from '../_actions/rateInput'
 
 type Inputs = {
   imgUrl?: string

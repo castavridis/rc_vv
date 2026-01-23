@@ -1,4 +1,4 @@
-import UserNav from './components/UserNav'
+import UserNav from './_components/UserNav'
 import './globals.css'
 
 import dotenv from 'dotenv'
