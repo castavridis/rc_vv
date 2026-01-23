@@ -1,3 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&display=swap');
+
+.funnel_display_300 {
+  font-family: "Funnel Display", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}
+
 /* Register animatable custom properties for gradient positions and sizes */
 @property --sincerity-x { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
 @property --sincerity-y { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
@@ -26,13 +35,13 @@
 
   --sincerity-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='16px' width='656px'><text opacity='0.3' x='0' y='12' fill='brown' font-size='12' font-family='sans-serif'>down-to-earth · family oriented · small-town · honest · sincere · real · wholesome · original · cheerful · sentimental · friendly · </text></svg>");
 
-  --excitement-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='12px' width='865px'><text rotate='30' x='0' y='6' fill='purple' font-size='12' font-family='monospace'><animateTransform attributeName='transform' attributeType='XML' type='rotate' from='-10 60 70' to='10 60 70' dur='1.25s' repeatCount='indefinite' />daring · trendy · exciting · spirited · cool · young · imaginative · unique · up-to-date · independent · contemporary · </text></svg>");
+  --excitement-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18' width='865px'><text rotate='30' x='0' y='9' fill='purple' font-size='12' font-family='monospace' opacity='0.25'><animateTransform attributeName='transform' attributeType='XML' type='rotate' from='-0.5 60 70' to='0.5 60 70' dur='5s' repeatCount='indefinite' />daring · trendy · exciting · spirited · cool · young · imaginative · unique · up-to-date · independent · contemporary · </text></svg>");
 
-  --competence-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='475px'><text rotate='0' x='0' y='12' fill='white' font-size='12' font-family='serif'>reliable · hard working · secure · intelligent · technical · corporate · successful · leader · confident · </text></svg>");
+  --competence-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='24' width='710px'><text rotate='0' x='0' y='12' fill='black' font-size='18' font-family='serif' opacity='1'>reliable · hard working · secure · intelligent · technical · corporate · successful · leader · confident · </text></svg>");
 
-  --sophistication-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='380px'><text rotate='0' x='0' y='12' fill='slateblue' font-size='12' font-family='sans-serif'>upper class · glamorous · good looking · charming · feminine · smooth · </text></svg>");
+  --sophistication-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='24' width='450px'><text rotate='0' x='0' y='12' fill='slateblue' font-size='18' font-family='Funnel Display' opacity='0.25'>upper class · glamorous · good looking · charming · feminine · smooth · </text></svg>");
 
-  --ruggedness-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='240px'><text rotate='0' x='0' y='12' fill='black' font-size='12' font-family='serif'>outdoorsy · masculine · western · tough · rugged · </text></svg>");
+  --ruggedness-bg-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='18px' width='240px'><text rotate='0' x='0' y='12' fill='black' font-size='12' font-family='serif' opacity='0.25'>outdoorsy · masculine · western · tough · rugged · </text></svg>");
 }
 
 .noise {
@@ -80,11 +89,11 @@
 .excitement {
   background-image:
     var(--excitement-bg-image),
-    linear-gradient(to right, #DFFF00, #E0B0FF);
+    linear-gradient(to top right,#E0B0FF 75%, #DFFF00);
   mask-image: radial-gradient(ellipse at var(--excitement-x) var(--excitement-y), #000A, transparent var(--excitement-size));
   mask-type: alpha;
   background-repeat: repeat;
-  animation: excitement-bounce 10s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  animation: excitement-bounce 20s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
 }
 .competence {
   background-image:
@@ -101,12 +110,12 @@
   mask-image: radial-gradient(ellipse at var(--sophistication-x) var(--sophistication-y), #000A, transparent var(--sophistication-size));
   mask-type: alpha;
   background-repeat: repeat;
-  animation: sophistication-flow 15s ease infinite;
+  animation: sophistication-flow 50s ease infinite;
 }
 .ruggedness {
   background-image: 
     var(--ruggedness-bg-image),
-    linear-gradient(to right, #483C32, #CD7F32);
+    linear-gradient(to top right, #483C32, #CD7F32 15%);
   mask-image: radial-gradient(ellipse at var(--ruggedness-x) var(--ruggedness-y), #000A, transparent var(--ruggedness-size));
   mask-type: alpha;
   background-repeat: repeat;
