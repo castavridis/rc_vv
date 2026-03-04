@@ -4,7 +4,7 @@
 -- Sessions (minimal — expanded in Phase 3)
 CREATE TABLE IF NOT EXISTS sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   auto_title TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

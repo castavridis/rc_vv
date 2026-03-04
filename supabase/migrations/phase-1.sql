@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS artworks (
 -- Artwork ratings (one row per user × artwork × trait)
 CREATE TABLE IF NOT EXISTS artwork_ratings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   artwork_id UUID NOT NULL REFERENCES artworks(id) ON DELETE CASCADE,
   trait TEXT NOT NULL,
   score INT NOT NULL CHECK (score >= 0 AND score <= 5),

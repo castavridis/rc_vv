@@ -12,6 +12,7 @@ interface RadarChartProps {
   strokeWidth?: number;
   title?: string;
   className?: string;
+  maxValue?: number;
 }
 
 function validateData(data: Record<string, number>): { valid: boolean; error?: string } {
@@ -25,8 +26,8 @@ function validateData(data: Record<string, number>): { valid: boolean; error?: s
   return { valid: true };
 }
 
-function clampValue(value: number): number {
-  return Math.max(1, Math.min(7, value));
+function clampValue(value: number, max: number): number {
+  return Math.max(0, Math.min(max, value));
 }
 
 function polarToCartesian(angle: number, radius: number, centerX: number, centerY: number, scale: number) {
@@ -46,9 +47,10 @@ function createRadarChart(
     strokeColor: string;
     strokeWidth: number;
     title?: string;
+    maxValue: number;
   }
 ): SVGSVGElement {
-  const { width, height, fillColor, fillOpacity, strokeColor, strokeWidth, title } = options;
+  const { width, height, fillColor, fillOpacity, strokeColor, strokeWidth, title, maxValue } = options;
   const keys = Object.keys(data);
   const numDimensions = keys.length;
   const angleStep = (2 * Math.PI) / numDimensions;
@@ -57,12 +59,11 @@ function createRadarChart(
   const centerY = height / 2;
   const maxRadius = Math.min(width, height) / 2 - 40; // Leave room for labels
 
-  // Create reference circles (levels 1-7)
-  const levels = [1, 2, 3, 4, 5, 6, 7];
+  const levels = Array.from({ length: maxValue }, (_, i) => i + 1);
   const circleData: { level: number; x: number; y: number }[] = [];
 
   levels.forEach(level => {
-    const radius = (level / 7) * maxRadius;
+    const radius = (level / maxValue) * maxRadius;
     for (let i = 0; i <= 360; i += 2) {
       const angle = (i * Math.PI) / 180;
       const { x, y } = polarToCartesian(angle, 1, centerX, centerY, radius);
@@ -83,8 +84,8 @@ function createRadarChart(
   const dataPoints: { key: string; value: number; x: number; y: number; order: number }[] = [];
   keys.forEach((key, i) => {
     const angle = i * angleStep - Math.PI / 2;
-    const value = clampValue(data[key]);
-    const radius = (value / 7) * maxRadius;
+    const value = clampValue(data[key], maxValue);
+    const radius = (value / maxValue) * maxRadius;
     const { x, y } = polarToCartesian(angle, 1, centerX, centerY, radius);
     dataPoints.push({ key, value, x, y, order: i });
   });
@@ -103,7 +104,7 @@ function createRadarChart(
 
   // Create level labels (on the right axis, level 1)
   const levelLabels = levels.map(level => {
-    const radius = (level / 7) * maxRadius;
+    const radius = (level / maxValue) * maxRadius;
     return { level: String(level), x: centerX + 8, y: centerY - radius };
   });
 
@@ -209,6 +210,7 @@ export default function RadarChart({
   strokeWidth = 2,
   title,
   className,
+  maxValue = 7,
 }: RadarChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -225,6 +227,7 @@ export default function RadarChart({
       strokeColor,
       strokeWidth,
       title,
+      maxValue,
     });
 
     containerRef.current.innerHTML = '';
@@ -235,7 +238,7 @@ export default function RadarChart({
         containerRef.current.innerHTML = '';
       }
     };
-  }, [data, width, height, fillColor, fillOpacity, strokeColor, strokeWidth, title, validation.valid]);
+  }, [data, width, height, fillColor, fillOpacity, strokeColor, strokeWidth, title, maxValue, validation.valid]);
 
   if (!validation.valid) {
     return (

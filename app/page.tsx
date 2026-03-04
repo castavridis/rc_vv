@@ -1,52 +1,69 @@
-import { getUser } from './_lib/auth/session';
-import LoginButton from './_components/LoginButton';
-import UploadForm from './_components/UploadForm';
-import RadarChart from './_components/RadarChart';
-import BrandMaskVisualization from './_components/BrandMaskVisualization';
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { getUser } from './_lib/auth/session'
+import supabase from './_actions/supabase'
+import SessionCard from './_components/SessionCard'
+import LoginButton from './_components/LoginButton'
 
-const sampleRadarData = {
-  "Sincerity": 5,
-  "Excitement": 3,
-  "Competence": 7,
-  "Sophistication": 4,
-  "Ruggedness": 2
-};
-
-export default async function Page() {
+export default async function HomePage() {
   const user = await getUser()
 
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-24 max-w-md text-center">
+        <h1 className="text-4xl font-bold font-mono mb-2">vv.</h1>
+        <p className="text-sm text-zinc-500 mb-8">
+          Brand personality exploration for Recursers.
+        </p>
+        <LoginButton />
+      </div>
+    )
+  }
+
+  const { data: sessions } = await supabase
+    .from('sessions')
+    .select('id, title, auto_title, created_at')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false })
+
   return (
-    <div className="container py-12 mx-auto">
-      <div className="absolute inset-0 z-10">
-        <h1 className="text-3xl font-bold font-mono mb-4">vv.</h1>
-        <p>fka Visible Vibes</p>
-        <p>vv </p>
-        {
-          !user
-            ? <div>
-                <p>vv is in development and is currently only open to Recursers.</p>
-                <LoginButton />
-              </div>
-            : <div>
-                Hi {user.name}!
-                <UploadForm />
-                <RadarChart
-                  data={sampleRadarData}
-                  width={400}
-                  height={400}
-                  fillColor="#22c55e"
-                  className="mx-auto mt-8"
-                />
-                <h2 className="text-xl font-semibold mt-12 mb-4">Brand Dimensions Visualization</h2>
-              </div>
-        }
+    <div className="container mx-auto px-4 py-12 max-w-5xl">
+      <div className="flex items-center justify-between mb-10">
+        <div>
+          <h1 className="text-2xl font-bold font-mono">vv.</h1>
+          <p className="text-sm text-zinc-500 font-mono">Hi, {user.name.split(' ')[0]}.</p>
+        </div>
+        <Link
+          href="/session/new"
+          className="px-4 py-2 bg-zinc-800 text-white text-sm font-mono rounded hover:bg-zinc-700"
+        >
+          + New Session
+        </Link>
       </div>
 
-      {/* <BrandMaskVisualization
-        autoPlay={true}
-        animationDuration={8}
-        className="mx-auto absolute inset-0 -z-10"
-      /> */}
+      {!sessions || sessions.length === 0 ? (
+        <div className="text-center py-24">
+          <p className="text-sm text-zinc-400 font-mono mb-6">No sessions yet.</p>
+          <Link
+            href="/session/new"
+            className="px-5 py-2.5 bg-zinc-800 text-white text-sm font-mono rounded hover:bg-zinc-700"
+          >
+            Start your first session →
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+          {sessions.map(session => (
+            <SessionCard
+              key={session.id}
+              id={session.id}
+              title={session.title}
+              autoTitle={session.auto_title}
+              createdAt={session.created_at}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -2,13 +2,33 @@
 
 ## Goal
 
-Generate geometric shape images representing brand traits at intensity levels informed by the session's current dimension slider values. Generated assets are stored in Supabase Storage and surfaced in the session asset library panel.
+Generate a library of brand assets — summaries, color palettes, abstract images, SVGs, and animations — all grounded in the session's assessed trait profile and dimension slider values. Each asset type is handled by a dedicated endpoint that owns its model choice and prompt presets. Generated assets are stored in Supabase Storage and surfaced in the session asset library panel.
+
+Assets should be as parameterized as possible so the user can adjust and remix them in-browser (Phase 5 canvas) without re-prompting.
 
 ## Dependencies
 
-- Phase 3 complete (sessions, dimension sliders, `slider_history`)
-- Supabase Storage bucket: `assets`
+- Phase 3 complete (sessions, dimension sliders, slider_history)
+- Supabase Storage bucket: `assets` (public read)
 - `OPENROUTER_API_KEY` set in environment
+
+---
+
+## Generation Tasks & Model Routing
+
+Each task is a dedicated server action endpoint. The endpoint owns the model, prompt template, and any presets.
+
+| Task | Model | Output | Notes |
+|---|---|---|---|
+| **Brand Summary** | Mistral Creative* | Text (1–3 sentences) | Synthesizes trait profile into a brand personality statement; used as context for all other tasks |
+| **Hex Color** | Mistral Creative* | Hex code(s) | Derives 1–3 brand colors from summary + traits |
+| **Abstract Image** | FLUX.2 Flex | PNG ≤1MP | 3 isolated subjects on white backdrop; extracted client-side via white threshold |
+| **SVG** | Claude Sonnet 4.6 | SVG code | Parameterized with CSS variables; renderable in-browser |
+| **Animation** | Claude Sonnet 4.6 | GSAP code | Applied to SVG or canvas elements; parameterized duration/easing/scale |
+
+*"Mistral Creative" — model ID: `mistralai/mistral-small-creative`
+
+**Trait inference (Mistral Medium 3)** is already handled by Phase 2 assessment. In a future iteration, the assessment prompt may also send baseline images representing core brand dimensions as visual anchors.
 
 ---
 
@@ -19,91 +39,159 @@ Generate geometric shape images representing brand traits at intensity levels in
 |---|---|---|
 | `id` | `uuid` | primary key |
 | `session_id` | `uuid` | FK → `sessions.id` |
-| `trait` | `text` | target trait for generation |
+| `task` | `text` | `'summary' | 'hex_color' | 'image' | 'svg' | 'animation'` |
+| `trait` | `text` | nullable — target trait (for image/svg/animation tasks) |
 | `dimension_weights` | `jsonb` | snapshot of all 5 dimension slider values at time of generation |
-| `model` | `text` | model ID used (e.g. `black-forest-labs/flux.2-klein-4b`) |
-| `storage_url` | `text` | Supabase Storage public URL |
+| `model` | `text` | OpenRouter model ID used |
+| `storage_url` | `text` | nullable — Supabase Storage public URL (for binary assets) |
+| `content` | `text` | nullable — inline content (summary text, hex code, SVG code, GSAP code) |
 | `status` | `text` | `'pending' | 'generating' | 'saving' | 'done' | 'error'` |
-| `error_message` | `text` | nullable, populated on failure |
+| `error_message` | `text` | nullable |
 | `created_at` | `timestamptz` | |
 
 ---
 
-## Prompt Construction
+## Task Specifications
 
-The generation prompt is built from `contentForTraitAndLevel(trait, level)` (existing in `app/_lib/bflPrompt.ts`) where `level` is derived from the current slider value for the trait's parent dimension.
+### Task 1 — Brand Summary
 
-**Level derivation:**
-1. Look up which dimension contains the target trait using `BRAND_PERSONALITY` from `brand.ts`
-2. Read that dimension's current slider value from the session's latest `slider_history` entry
-3. Round to nearest integer (0–5) for the prompt
+**Endpoint:** `generateSummary(sessionId)`
+**Model:** Mistral Creative (verify ID)
+**Input:** Top 5–10 trait scores from `trait_profiles`, current dimension slider values
+**Output:** 1–3 sentence brand personality statement stored in `content`
+**Usage:** Displayed in session header; passed as context to image, SVG, and animation tasks
 
-**Artwork context (optional):** Top-scoring same-direction artworks from the user's rated library can be included in the generation prompt as style references if the model supports image input.
+---
+
+### Task 2 — Hex Color
+
+**Endpoint:** `generateHexColor(sessionId)`
+**Model:** Mistral Creative (verify ID)
+**Input:** Brand summary + top trait scores
+**Output:** 1–3 hex color codes stored in `content` as JSON array (e.g. `["#2D1B69", "#E8C547"]`)
+**Usage:** Seeds Poline palette in Phase 5 canvas; displayed as color swatches in asset library
+
+---
+
+### Task 3 — Abstract Image (FLUX.2 Flex + Chroma-Key)
+
+**Endpoint:** `generateImage(sessionId, trait)`
+**Model:** `black-forest-labs/flux.2-flex`
+**Input:** Brand summary + trait + parent dimension slider value (0–5 level)
+**Output:** PNG ≤1MP
+
+**Isolation & extraction:**
+- Prompt uses the keyword `isolated` — a photographic term FLUX.2 Flex responds to by placing subjects on a clean white backdrop
+- Request 3 subjects in a single image (e.g. "three isolated objects representing [trait]"), each naturally separated by white space
+- Client-side: canvas pixel manipulation thresholds near-white pixels (RGB > 240, 240, 240) as transparent, producing clean cutouts
+- Each extracted object becomes a separate draggable asset on the Phase 5 canvas
+- Backdrop color is white by default but could be parameterized to any solid color — `isolated on [color] background` — pending further testing
+
+**Prompt construction:** `contentForTraitAndLevel(trait, level)` from `bflPrompt.ts`, extended with:
+- Brand summary as context
+- `isolated` keyword and 3-subject instruction
+
+**Storage:** Binary uploaded to Supabase Storage `assets/{session_id}/{asset_id}.png`
+
+---
+
+### Task 4 — SVG
+
+**Endpoint:** `generateSVG(sessionId, trait)`
+**Model:** `anthropic/claude-sonnet-4-6`
+**Input:** Brand summary + trait + dimension slider values
+**Output:** Valid SVG code stored in `content`
+
+**Parameterization requirements:**
+- SVG must use CSS custom properties (`--color-primary`, `--scale`, `--opacity`, etc.) for key visual attributes
+- These properties become in-browser sliders/pickers in Phase 5
+- Rendered directly as an `<svg>` element in the canvas — no rasterization
+
+---
+
+### Task 5 — Animation
+
+**Endpoint:** `generateAnimation(sessionId, trait)`
+**Model:** `anthropic/claude-sonnet-4-6`
+**Input:** Brand summary + trait + dimension slider values
+**Output:** GSAP animation code (JavaScript string) stored in `content`
+
+**Parameterization requirements:**
+- Animation should expose `duration`, `ease`, and `scale` as configurable variables
+- Code is evaluated client-side and applied to a target SVG or canvas element
+- GSAP is already installed in the project
+
+**Safety note:** Evaluated JS from a model output is a known risk. Since this is a personal tool (single authenticated user), this is acceptable for now. Do not expose this endpoint publicly.
 
 ---
 
 ## Generation Queue
 
-Each generation job is a unit: `(session_id, trait, dimension_weights_snapshot)`.
+Jobs are processed client-side in sequence. Status tracked locally and synced to `generated_assets` on completion.
 
-Jobs are processed client-side in sequence or small batches. Status is tracked locally in component state and synced to `generated_assets` on completion.
+States: `pending → generating → saving → done | error`
 
-Queue states per job:
-- `pending` — queued, not yet started
-- `generating` — OpenRouter request in flight
-- `saving` — uploading result to Supabase Storage
-- `done` — `storage_url` populated, asset visible in library
-- `error` — failed, error message shown, retry available
+Multiple tasks can be queued in one session. Retry is available per job.
 
 ---
 
 ## User Stories
 
-- As a user, I can select one or more traits to generate assets for
-- As a user, generated images reflect my current dimension slider values
-- As a user, I can see a generation queue with live status per job
-- As a user, I can retry failed generation jobs individually
-- As a user, generated assets appear in the asset library panel once complete
-- As a user, I can see which slider values were active when each asset was generated
+- As a user, I can generate a brand summary from my assessed trait profile
+- As a user, I can generate hex color suggestions based on my brand summary and traits
+- As a user, I can generate an abstract image for a selected trait, receiving 3 chroma-key extracted panels
+- As a user, I can generate a parameterized SVG for a selected trait and adjust its CSS variables in-browser
+- As a user, I can generate a GSAP animation for a selected trait and adjust its parameters in-browser
+- As a user, I can see all generated assets in the asset library panel, organized by task type
+- As a user, I can retry failed generation jobs
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Generation calls `black-forest-labs/flux.2-klein-4b` via OpenRouter
-- [ ] `level` parameter derived from the target trait's parent dimension slider value at time of generation
-- [ ] `dimension_weights` JSON snapshot stored with each `generated_assets` record
-- [ ] Generated image (data URI or URL) fetched and uploaded to Supabase Storage under `assets/{session_id}/{asset_id}.{ext}`
-- [ ] `generated_assets` record created with `storage_url` and `status = 'done'` on success
-- [ ] Asset library panel renders a thumbnail grid of all `done` assets for the session
-- [ ] Failed jobs display error message and a "Retry" button that re-queues the job
-- [ ] Generation can be triggered for multiple traits at once (queued sequentially)
-- [ ] Assets panel updates in real time as jobs complete (polling or optimistic UI)
+- [ ] `generateSummary` calls Mistral Creative, stores result in `generated_assets.content`
+- [ ] `generateHexColor` calls Mistral Creative, stores hex array in `generated_assets.content`
+- [ ] `generateImage` calls FLUX.2 Flex, stores PNG in Supabase Storage, stores URL in `storage_url`
+- [ ] Image prompt includes chroma-key sectioning instruction; client extracts 3 panels
+- [ ] `generateSVG` calls Claude Sonnet, stores SVG code in `content`, uses CSS custom properties
+- [ ] `generateAnimation` calls Claude Sonnet, stores GSAP code in `content`
+- [ ] All endpoints store `dimension_weights` snapshot at time of generation
+- [ ] Asset library panel groups assets by task type
+- [ ] Failed jobs show error and retry button
+- [ ] `sessions.updated_at` touched on any new asset
 
 ---
 
 ## New Files
 
 ```
-app/_components/AssetLibrary.tsx           — thumbnail grid of generated assets for the session
-app/_components/GenerationQueue.tsx        — job list with per-job status indicator and retry button
-app/_components/TraitSelector.tsx          — UI to select one or more traits to generate for
-app/_actions/saveAssetToStorage.ts         — server action: upload image blob to Supabase Storage, insert generated_assets record
+app/_actions/generateSummary.ts          — Mistral Creative: brand summary
+app/_actions/generateHexColor.ts         — Mistral Creative: hex color palette
+app/_actions/generateImage.ts            — FLUX.2 Flex: abstract image + chroma-key
+app/_actions/generateSVG.ts             — Claude: parameterized SVG
+app/_actions/generateAnimation.ts        — Claude: GSAP animation code
+app/_actions/saveAssetToStorage.ts       — upload binary asset to Supabase Storage
+app/_components/AssetLibrary.tsx         — asset grid panel grouped by task type
+app/_components/GenerationControls.tsx   — task selector + generate button + queue
+app/_components/GenerationQueue.tsx      — per-job status + retry
+app/_lib/isolationExtract.ts             — client-side white-background removal utility (canvas pixel threshold)
 ```
 
 ## Files to Modify
 
 ```
-app/_actions/generateBflImage.ts           — minor: ensure error shape is consistent
-app/_actions/saveBflImage.ts               — rewrite: save to Supabase Storage instead of local filesystem
-app/_lib/bflPrompt.ts                      — minor: accept dimension_weights object, derive level from parent dimension
-app/session/[id]/page.tsx                  — add TraitSelector, GenerationQueue, and AssetLibrary panels
+app/_actions/generateBflImage.ts         — retire or redirect to generateImage
+app/_actions/saveBflImage.ts             — retire or redirect to saveAssetToStorage
+app/_lib/bflPrompt.ts                    — extend to include brand summary + chroma-key instruction
+app/session/[id]/page.tsx               — add GenerationControls and AssetLibrary panels
 ```
 
 ---
 
-## Notes
+## Open Questions
 
-- The existing `/tests/bfl` page and `BflGenerator.tsx` can be retired once this phase is complete, or kept as a scratchpad
-- `dimension_weights` snapshot is important for Phase 6 model evaluation — it lets us correlate slider settings with generation outputs over time
-- Supabase Storage bucket `assets` should be set to public read for direct URL access in canvas (Phase 5)
+- **Mistral Creative model ID** — confirmed: `mistralai/mistral-small-creative`
+- **FLUX.2 Flex model ID** — confirmed: `black-forest-labs/flux.2-flex`
+- **Isolation extraction** — `isolated` keyword works well in Flex; test whether 3-subject prompts produce cleanly separable objects; white threshold (RGB > 240) should handle most cases but may need tuning for off-white backgrounds
+- **Animation safety** — evaluated GSAP code from model output; acceptable for personal tool but worth revisiting if scope expands
+- **SVG complexity** — Claude may produce overly complex SVGs; may need to constrain prompt to simple geometric compositions consistent with the Flux image style
