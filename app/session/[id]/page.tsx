@@ -8,7 +8,8 @@ import DimensionSliders from '../../_components/DimensionSliders'
 import RadarChart from '../../_components/RadarChart'
 import AssessmentResult from '../../_components/AssessmentResult'
 import GenerationControls from '../../_components/GenerationControls'
-import AssetLibrary from '../../_components/AssetLibrary'
+import PolinePalette from '../../_components/PolinePalette'
+import CanvasSection from '../../_components/CanvasSection'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -52,7 +53,8 @@ export default async function SessionPage({ params }: Props) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      {/* Top: 3-column profile / traits / generate+assets */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
         {/* Left: profile */}
         <div className="lg:col-span-1 space-y-8">
           <div>
@@ -117,7 +119,7 @@ export default async function SessionPage({ params }: Props) {
           )}
         </div>
 
-        {/* Right: generation + asset library */}
+        {/* Right: generation + palette */}
         <div className="lg:col-span-1 space-y-8">
           <div>
             <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-4">
@@ -130,22 +132,20 @@ export default async function SessionPage({ params }: Props) {
             />
           </div>
 
-          <div>
-            <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-4">
-              Asset Library
-            </h2>
-            <AssetLibrary sessionId={session.id} />
-          </div>
-
-          <div>
-            <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-4">
-              Canvas
-            </h2>
-            <div className="rounded border border-dashed border-zinc-200 h-48 flex items-center justify-center text-xs font-mono text-zinc-300">
-              Phase 5
+          {(traits ?? []).length > 0 && (
+            <div>
+              <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-4">
+                Palette
+              </h2>
+              <PolinePalette traitScores={traits!} />
             </div>
-          </div>
+          )}
         </div>
+      </div>
+
+      {/* Bottom: asset library + canvas + compositions */}
+      <div className="mt-12 space-y-8">
+        <CanvasSection sessionId={session.id} />
       </div>
     </div>
   )

@@ -10,6 +10,7 @@ type Asset = AssetRow & { task: AssetTask }
 interface AssetLibraryProps {
   sessionId: string
   refreshKey?: number
+  onAddToCanvas?: (storageUrl: string, assetId: string) => void
 }
 
 const TASK_ORDER: AssetTask[] = ['summary', 'hex_color', 'image', 'svg', 'animation']
@@ -21,7 +22,7 @@ const TASK_LABELS: Record<AssetTask, string> = {
   animation: 'Animations',
 }
 
-export default function AssetLibrary({ sessionId, refreshKey }: AssetLibraryProps) {
+export default function AssetLibrary({ sessionId, refreshKey, onAddToCanvas }: AssetLibraryProps) {
   const [assets, setAssets] = useState<Asset[]>([])
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function AssetLibrary({ sessionId, refreshKey }: AssetLibraryProp
           </p>
           <div className={task === 'image' ? 'grid grid-cols-2 gap-2' : 'space-y-2'}>
             {byTask[task].map(asset => (
-              <AssetTile key={asset.id} asset={asset} />
+              <AssetTile key={asset.id} asset={asset} onAddToCanvas={onAddToCanvas} />
             ))}
           </div>
         </div>
@@ -57,16 +58,34 @@ export default function AssetLibrary({ sessionId, refreshKey }: AssetLibraryProp
   )
 }
 
-function AssetTile({ asset }: { asset: Asset }) {
+function AssetTile({ asset, onAddToCanvas }: { asset: Asset; onAddToCanvas?: (url: string, id: string) => void }) {
   if (asset.task === 'image' && asset.storage_url) {
+    function handleDragStart(e: React.DragEvent) {
+      e.dataTransfer.setData('asset-url', asset.storage_url!)
+      e.dataTransfer.setData('asset-id', asset.id)
+      e.dataTransfer.effectAllowed = 'copy'
+    }
+
     return (
-      <div className="aspect-square rounded overflow-hidden bg-zinc-100 cursor-grab">
+      <div
+        className="relative aspect-square rounded overflow-hidden bg-zinc-100 cursor-grab group"
+        draggable
+        onDragStart={handleDragStart}
+      >
         <img
           src={asset.storage_url}
           alt={asset.trait ?? 'generated image'}
-          className="w-full h-full object-cover"
-          draggable
+          className="w-full h-full object-cover pointer-events-none select-none"
+          draggable={false}
         />
+        {onAddToCanvas && (
+          <button
+            onClick={() => onAddToCanvas(asset.storage_url!, asset.id)}
+            className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-zinc-800/80 text-white text-[10px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            + Canvas
+          </button>
+        )}
       </div>
     )
   }
