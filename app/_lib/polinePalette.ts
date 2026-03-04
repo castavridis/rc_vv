@@ -93,7 +93,7 @@ export async function generatePolinePalette(
   const poline = new Poline({
     anchorColors: anchorPoints,
     numPoints: numColors,
-    positionFunction: positionFunctions.sinusoidal,
+    positionFunction: positionFunctions.sinusoidalPosition,
   })
 
   return poline.colors.map(([h, s, l]: [number, number, number]) => hslToHex(h, s, l))
