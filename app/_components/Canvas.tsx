@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { gsap } from 'gsap'
 import { Draggable } from 'gsap/Draggable'
-import html2canvas from 'html2canvas'
+import { toPng } from 'html-to-image'
 import { saveComposition, type CanvasElement } from '../_actions/saveComposition'
 
 gsap.registerPlugin(Draggable)
@@ -97,13 +97,12 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     setSaveError(null)
 
     try {
-      const captureCanvas = await html2canvas(containerRef.current, {
+      const dataUrl = await toPng(containerRef.current, {
         backgroundColor: bgColor,
-        useCORS: true,
-        scale: 1,
+        pixelRatio: 1,
       })
 
-      const base64 = captureCanvas.toDataURL('image/png').split(',')[1]
+      const base64 = dataUrl.split(',')[1]
       const result = await saveComposition(sessionId, elements, base64)
 
       if (result.success && result.thumbnailUrl) {

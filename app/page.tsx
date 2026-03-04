@@ -22,7 +22,7 @@ export default async function HomePage() {
 
   const { data: sessions } = await supabase
     .from('sessions')
-    .select('id, title, auto_title, created_at')
+    .select('id, title, auto_title, created_at, compositions(thumbnail_url, created_at)')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
 
@@ -53,15 +53,21 @@ export default async function HomePage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          {sessions.map(session => (
-            <SessionCard
-              key={session.id}
-              id={session.id}
-              title={session.title}
-              autoTitle={session.auto_title}
-              createdAt={session.created_at}
-            />
-          ))}
+          {sessions.map(session => {
+            const comps = Array.isArray(session.compositions) ? session.compositions : []
+            const latest = comps.sort((a: { created_at: string }, b: { created_at: string }) =>
+              b.created_at.localeCompare(a.created_at))[0]
+            return (
+              <SessionCard
+                key={session.id}
+                id={session.id}
+                title={session.title}
+                autoTitle={session.auto_title}
+                createdAt={session.created_at}
+                thumbnailUrl={latest?.thumbnail_url ?? null}
+              />
+            )
+          })}
         </div>
       )}
     </div>
