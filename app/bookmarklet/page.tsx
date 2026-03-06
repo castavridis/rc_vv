@@ -78,7 +78,6 @@ export default async function BookmarkletPage() {
             <a
               href={bookmarklet}
               className="inline-block px-4 py-2 bg-zinc-800 text-white text-sm font-mono rounded cursor-move select-none"
-              onClick={e => e.preventDefault()}
             >
               Save to Library
             </a>
