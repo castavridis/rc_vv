@@ -8,14 +8,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let body: { image_url?: string; source_url?: string; title?: string }
+  let body: { image_url?: string; source_url?: string; title?: string; artist?: string; year?: string }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { image_url, source_url, title } = body
+  const { image_url, source_url, title, artist, year } = body
   if (!image_url) {
     return NextResponse.json({ error: 'image_url is required' }, { status: 400 })
   }
@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
       source_url: source_url ?? null,
       user_id: user.id,
       tags: [],
+      artist: artist ?? null,
+      year: year ? parseInt(year, 10) || null : null,
     })
     .select('id')
     .single()
