@@ -6,10 +6,12 @@ interface ArtworkCardProps {
   artist?: string | null
   year?: number | null
   imageUrl: string
+  medium?: string | null
+  tags?: string[]
   rated: boolean
 }
 
-export default function ArtworkCard({ id, title, artist, year, imageUrl, rated }: ArtworkCardProps) {
+export default function ArtworkCard({ id, title, artist, year, imageUrl, medium, tags, rated }: ArtworkCardProps) {
   return (
     <Link href={`/library/${id}`} className="group block">
       <div className="relative aspect-square overflow-hidden rounded bg-zinc-100">
@@ -32,6 +34,18 @@ export default function ArtworkCard({ id, title, artist, year, imageUrl, rated }
           <p className="text-xs text-zinc-500 truncate">
             {[artist, year].filter(Boolean).join(' · ')}
           </p>
+        )}
+        {medium && (
+          <p className="text-xs text-zinc-400 truncate">{medium}</p>
+        )}
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {tags.slice(0, 3).map(tag => (
+              <span key={tag} className="text-xs font-mono bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded">
+                {tag}
+              </span>
+            ))}
+          </div>
         )}
       </div>
     </Link>

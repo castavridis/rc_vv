@@ -14,6 +14,15 @@ export async function uploadArtwork(formData: FormData): Promise<UploadArtworkRe
   const artist = (formData.get('artist') as string) || null
   const yearRaw = formData.get('year') as string
   const year = yearRaw ? parseInt(yearRaw, 10) : null
+  const userId = formData.get('user_id') as string | null
+  const description = (formData.get('description') as string) || null
+  const medium = (formData.get('medium') as string) || null
+  const sourceUrl = (formData.get('source_url') as string) || null
+  const tagsRaw = (formData.get('tags') as string) || ''
+  const tags = tagsRaw
+    .split(',')
+    .map(t => t.trim())
+    .filter(Boolean)
 
   if (!file || !title) {
     return { success: false, error: 'Image and title are required' }
@@ -36,7 +45,18 @@ export async function uploadArtwork(formData: FormData): Promise<UploadArtworkRe
 
   const { data, error: dbError } = await supabase
     .from('artworks')
-    .insert({ title, artist, year, image_url: publicUrl, source: 'upload' })
+    .insert({
+      title,
+      artist,
+      year,
+      image_url: publicUrl,
+      source: 'upload',
+      user_id: userId || null,
+      description,
+      medium,
+      source_url: sourceUrl,
+      tags,
+    })
     .select('id')
     .single()
 
