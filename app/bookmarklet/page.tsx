@@ -1,9 +1,10 @@
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import Link from 'next/link'
 
-function buildBookmarklet(origin: string): string {
+function buildBookmarklet(origin: string, sessionToken: string): string {
   const scriptUrl = `${origin}/api/bookmarklet-script`
-  const code = `(function(){var s=document.createElement('script');s.src='${scriptUrl}?t='+Date.now();document.head.appendChild(s);})();`
+  const tok = encodeURIComponent(sessionToken)
+  const code = `(function(){var s=document.createElement('script');s.src='${scriptUrl}?t='+Date.now()+'&tok=${tok}';document.head.appendChild(s);})();`
   return `javascript:${encodeURIComponent(code)}`
 }
 
@@ -12,7 +13,14 @@ export default async function BookmarkletPage() {
   const host = headersList.get('host') ?? 'localhost:3001'
   const proto = host.startsWith('localhost') ? 'http' : 'https'
   const origin = `${proto}://${host}`
-  const bookmarklet = buildBookmarklet(origin)
+
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get('rc_vv_session')
+  const sessionToken = sessionCookie?.value
+    ? Buffer.from(sessionCookie.value).toString('base64')
+    : ''
+
+  const bookmarklet = buildBookmarklet(origin, sessionToken)
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-2xl">

@@ -4,8 +4,10 @@ export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin
   const saveUrl = `${origin}/api/save-image`
   const libraryUrl = `${origin}/library`
+  const tok = request.nextUrl.searchParams.get('tok') ?? ''
 
   const script = `(function(){
+  var rcTok=${JSON.stringify(tok)};
   var pageUrl=window.location.href;
   var saveUrl=${JSON.stringify(saveUrl)};
   var libUrl=${JSON.stringify(libraryUrl)};
@@ -155,7 +157,7 @@ export async function GET(request: NextRequest) {
         item.status='saving';render();
         fetch(saveUrl,{
           method:'POST',credentials:'include',
-          headers:{'Content-Type':'application/json'},
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+rcTok},
           body:JSON.stringify({image_url:item.src,source_url:pageUrl,title:item.title||undefined,artist:item.artist||undefined,year:item.year||undefined})
         }).then(function(r){return r.json();}).then(function(d){
           if(d.artworkId){item.status='saved';}
