@@ -65,6 +65,14 @@ export async function GET(request: NextRequest) {
   if(!imgs.length){alert('No large images found on this page.');return;}
 
   var dims=['Sincerity','Excitement','Competence','Sophistication','Ruggedness'];
+  var dimData={
+    Sincerity:{'Down-to-Earth':['Down-to-Earth','Family Oriented','Small-Town'],Honest:['Honest','Sincere','Real'],Wholesome:['Wholesome','Original'],Cheerful:['Cheerful','Sentimental','Friendly']},
+    Excitement:{Daring:['Daring','Trendy','Exciting'],Spirited:['Spirited','Cool','Young'],Imaginative:['Imaginative','Unique'],'Up-to-Date':['Up-to-Date','Independent','Contemporary']},
+    Competence:{Reliable:['Reliable','Hard Working','Secure'],Intelligent:['Intelligent','Technical','Corporate'],Successful:['Successful','Leader','Confident']},
+    Sophistication:{'Upper Class':['Upper Class','Glamorous','Good Looking'],Charming:['Charming','Feminine','Smooth']},
+    Ruggedness:{Outdoorsy:['Outdoorsy','Masculine','Western'],Tough:['Tough','Rugged']}
+  };
+  var lpWidth=300;
 
   var state=imgs.map(function(im,i){
     var m=getMeta(im.el);
@@ -91,8 +99,12 @@ export async function GET(request: NextRequest) {
     h+='button.pri{background:#18181b;color:#fff;border-color:#18181b}';
     h+='button:disabled{opacity:.4;cursor:default}';
     h+='.bd{flex:1;display:flex;flex-direction:row;overflow:hidden}';
-    h+='.lp{width:300px;border-right:1px solid #e4e4e7;overflow-y:auto;padding:10px 12px;flex-shrink:0}';
+    h+='.lp{width:'+lpWidth+'px;border-right:1px solid #e4e4e7;overflow-y:auto;padding:10px 12px;flex-shrink:0}';
+    h+='.rs{width:5px;cursor:col-resize;flex-shrink:0;background:#e4e4e7}';
+    h+='.rs:hover,.rs.dragging{background:#a1a1aa}';
     h+='.rp{flex:1;overflow-y:auto;padding:10px 12px}';
+    h+='.dinfo{padding:2px 0 5px 96px;font-size:9px;color:#a1a1aa;line-height:1.6}';
+    h+='.dinfo b{color:#71717a}';
     h+='.grid{display:flex;flex-wrap:wrap;gap:5px;align-items:flex-start}';
     h+='.thumb{position:relative;width:88px;cursor:pointer;border-radius:3px;overflow:hidden;border:2px solid transparent;background:#f4f4f5}';
     h+='.thumb.sel{border-color:#18181b}';
@@ -127,7 +139,7 @@ export async function GET(request: NextRequest) {
       if(s.sel)h+='<div class="ck">&#10003;</div>';
       h+='</div>';
     });
-    h+='</div></div>';
+    h+='</div></div><div class="rs"></div>';
     h+='<div class="rp">';
     if(!sel.length){
       h+='<div class="empty">Click images on the left to select</div>';
@@ -148,6 +160,12 @@ export async function GET(request: NextRequest) {
           h+='<div class="dim"><label>'+d+'</label>';
           h+='<input type="range" min="0" max="5" step="1" value="'+v+'"'+dis+' oninput="updR('+s.id+',\\''+d+'\\',this.value);this.nextElementSibling.textContent=this.value">';
           h+='<span>'+v+'</span></div>';
+          var fd=dimData[d];
+          if(fd){
+            h+='<div class="dinfo">';
+            Object.keys(fd).forEach(function(facet){h+='<b>'+facet+'</b> '+fd[facet].join(', ')+' &nbsp;';});
+            h+='</div>';
+          }
         });
         h+='</div>';
         if(s.status==='saving')h+='<div class="st sv">Saving\u2026</div>';
@@ -161,6 +179,16 @@ export async function GET(request: NextRequest) {
     if(saved)h+='<a href="'+libUrl+'" target="_blank">Open Library \u2192</a>';
     h+='</div></body></html>';
     doc.open();doc.write(h);doc.close();
+    var lpEl=doc.querySelector('.lp');
+    var rsEl=doc.querySelector('.rs');
+    if(rsEl){rsEl.onmousedown=function(e){
+      e.preventDefault();rsEl.classList.add('dragging');
+      var startX=e.clientX,startW=lpEl.offsetWidth;
+      function mv(e){var w=Math.max(120,Math.min(550,startW+e.clientX-startX));lpEl.style.width=w+'px';lpWidth=w;}
+      function up(){rsEl.classList.remove('dragging');doc.removeEventListener('mousemove',mv);doc.removeEventListener('mouseup',up);}
+      doc.addEventListener('mousemove',mv);
+      doc.addEventListener('mouseup',up);
+    };}
     win.tog=function(id){state.forEach(function(s){if(s.id===id&&s.status!=='saved')s.sel=!s.sel;});render();};
     win.selAll=function(){state.forEach(function(s){if(s.status!=='saved')s.sel=true;});render();};
     win.upd=function(id,k,v){state.forEach(function(s){if(s.id===id)s[k]=v;});};

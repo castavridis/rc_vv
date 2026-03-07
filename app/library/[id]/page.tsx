@@ -33,11 +33,11 @@ export default async function ArtworkPage({ params }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
         <div>
-          <div className="aspect-square rounded overflow-hidden bg-zinc-100">
+          <div className="rounded overflow-hidden bg-zinc-100">
             <img
               src={artwork.image_url}
               alt={artwork.title}
-              className="w-full h-full object-cover"
+              className="w-full h-auto block"
             />
           </div>
         </div>
