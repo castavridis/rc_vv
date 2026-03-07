@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '../../_lib/auth/session'
 import supabase from '../../_actions/supabase'
+import { BRAND_PERSONALITY } from '../../_lib/brand'
 
 function corsHeaders(request: NextRequest) {
   return {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders(request) })
   }
 
-  let body: { image_url?: string; source_url?: string; title?: string; artist?: string; year?: string }
+  let body: { image_url?: string; source_url?: string; title?: string; artist?: string; year?: string; ratings?: Record<string, number> }
   try {
     body = await request.json()
   } catch {
@@ -99,6 +100,28 @@ export async function POST(request: NextRequest) {
 
   if (dbError) {
     return NextResponse.json({ error: dbError.message }, { status: 500, headers: corsHeaders(request) })
+  }
+
+  if (body.ratings && Object.keys(body.ratings).length > 0) {
+    const userId = Number(user.id)
+    const rows: { user_id: number; artwork_id: string; trait: string; score: number }[] = []
+    for (const [dimName, facetMap] of Object.entries(BRAND_PERSONALITY)) {
+      const score = body.ratings[dimName]
+      if (score == null) continue
+      for (const traits of Object.values(facetMap)) {
+        for (const trait of traits!) {
+          rows.push({ user_id: userId, artwork_id: data.id, trait, score: Number(score) })
+        }
+      }
+    }
+    if (rows.length) {
+      const { error: ratingsError } = await supabase
+        .from('artwork_ratings')
+        .upsert(rows, { onConflict: 'user_id,artwork_id,trait' })
+      if (ratingsError) {
+        console.error('[save-image] ratings upsert failed:', ratingsError)
+      }
+    }
   }
 
   const origin = request.nextUrl.origin

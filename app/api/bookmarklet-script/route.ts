@@ -64,12 +64,15 @@ export async function GET(request: NextRequest) {
 
   if(!imgs.length){alert('No large images found on this page.');return;}
 
+  var dims=['Sincerity','Excitement','Competence','Sophistication','Ruggedness'];
+
   var state=imgs.map(function(im,i){
     var m=getMeta(im.el);
-    return{id:i,src:im.src,sel:false,title:m.title,artist:m.artist,year:m.year,status:'idle',err:''};
+    var ratings={};dims.forEach(function(d){ratings[d]=0;});
+    return{id:i,src:im.src,sel:false,title:m.title,artist:m.artist,year:m.year,status:'idle',err:'',ratings:ratings};
   });
 
-  var win=window.open('','_blank','width=600,height=720,resizable=yes');
+  var win=window.open('','_blank','width=860,height=660,resizable=yes');
   var doc=win.document;
 
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -87,21 +90,27 @@ export async function GET(request: NextRequest) {
     h+='button{padding:4px 10px;border:1px solid #d4d4d8;border-radius:3px;background:#fff;font:inherit;cursor:pointer}';
     h+='button.pri{background:#18181b;color:#fff;border-color:#18181b}';
     h+='button:disabled{opacity:.4;cursor:default}';
-    h+='.ga{padding:10px 12px;border-bottom:1px solid #e4e4e7;flex-shrink:0;max-height:220px;overflow-y:auto}';
-    h+='.grid{display:flex;flex-wrap:wrap;gap:5px}';
-    h+='.thumb{position:relative;width:72px;height:72px;cursor:pointer;border-radius:3px;overflow:hidden;border:2px solid transparent}';
+    h+='.bd{flex:1;display:flex;flex-direction:row;overflow:hidden}';
+    h+='.lp{width:300px;border-right:1px solid #e4e4e7;overflow-y:auto;padding:10px 12px;flex-shrink:0}';
+    h+='.rp{flex:1;overflow-y:auto;padding:10px 12px}';
+    h+='.grid{display:flex;flex-wrap:wrap;gap:5px;align-items:flex-start}';
+    h+='.thumb{position:relative;width:88px;cursor:pointer;border-radius:3px;overflow:hidden;border:2px solid transparent;background:#f4f4f5}';
     h+='.thumb.sel{border-color:#18181b}';
-    h+='.thumb img{width:100%;height:100%;object-fit:cover;display:block}';
+    h+='.thumb img{width:100%;height:auto;display:block}';
     h+='.ck{position:absolute;top:2px;right:2px;width:15px;height:15px;background:#18181b;border-radius:2px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center}';
-    h+='.fa{flex:1;overflow-y:auto;padding:10px 12px}';
     h+='.empty{color:#a1a1aa;padding:24px 0;text-align:center}';
     h+='.row{border:1px solid #e4e4e7;border-radius:4px;padding:8px;margin-bottom:7px}';
     h+='.ri{display:flex;gap:8px;align-items:flex-start}';
-    h+='.ri>img{width:44px;height:44px;object-fit:cover;border-radius:2px;flex-shrink:0}';
+    h+='.ri>img{width:44px;height:44px;object-fit:contain;background:#f4f4f5;border-radius:2px;flex-shrink:0}';
     h+='.flds{flex:1;display:flex;flex-direction:column;gap:4px}';
     h+='input[type=text]{width:100%;padding:3px 5px;border:1px solid #d4d4d8;border-radius:3px;font:inherit}';
     h+='.fr{display:flex;gap:4px}';
     h+='.fr input:first-child{flex:0 0 56px}';
+    h+='.dims{margin-top:6px}';
+    h+='.dim{display:flex;align-items:center;gap:6px;margin-top:4px}';
+    h+='.dim label{flex:0 0 90px;font-size:10px;color:#52525b}';
+    h+='.dim input[type=range]{flex:1}';
+    h+='.dim span{flex:0 0 14px;text-align:right;font-size:10px}';
     h+='.st{font-size:10px;margin-top:3px}';
     h+='.sv{color:#71717a}.ok{color:#16a34a}.er{color:#dc2626}';
     h+='.ft{padding:8px 12px;border-top:1px solid #e4e4e7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}';
@@ -111,7 +120,7 @@ export async function GET(request: NextRequest) {
     h+='<button onclick="selAll()">Select All</button>';
     h+='<button class="pri" onclick="doSave()"'+(sel.length===0||busy?' disabled':'')+'>Save Selected ('+sel.length+')</button>';
     h+='</div></div>';
-    h+='<div class="ga"><div class="grid">';
+    h+='<div class="bd"><div class="lp"><div class="grid">';
     state.forEach(function(s){
       h+='<div class="thumb'+(s.sel?' sel':'')+'" onclick="tog('+s.id+')">';
       h+='<img src="'+esc(s.src)+'" onerror="this.parentNode.style.display=\\'none\\'">';
@@ -119,9 +128,9 @@ export async function GET(request: NextRequest) {
       h+='</div>';
     });
     h+='</div></div>';
-    h+='<div class="fa">';
+    h+='<div class="rp">';
     if(!sel.length){
-      h+='<div class="empty">Click images above to select</div>';
+      h+='<div class="empty">Click images on the left to select</div>';
     }else{
       sel.forEach(function(s){
         var dis=(s.status==='saved'||s.status==='saving')?' disabled':'';
@@ -133,13 +142,21 @@ export async function GET(request: NextRequest) {
         h+='<input type="text" placeholder="Year" value="'+esc(s.year)+'" oninput="upd('+s.id+',\\'year\\',this.value)"'+dis+'>';
         h+='<input type="text" placeholder="Artist / Designer" value="'+esc(s.artist)+'" oninput="upd('+s.id+',\\'artist\\',this.value)"'+dis+'>';
         h+='</div>';
+        h+='<div class="dims">';
+        dims.forEach(function(d){
+          var v=s.ratings[d]||0;
+          h+='<div class="dim"><label>'+d+'</label>';
+          h+='<input type="range" min="0" max="5" step="1" value="'+v+'"'+dis+' oninput="updR('+s.id+',\\''+d+'\\',this.value);this.nextElementSibling.textContent=this.value">';
+          h+='<span>'+v+'</span></div>';
+        });
+        h+='</div>';
         if(s.status==='saving')h+='<div class="st sv">Saving\u2026</div>';
         else if(s.status==='saved')h+='<div class="st ok">Saved \u2713</div>';
         else if(s.status==='error')h+='<div class="st er">'+esc(s.err)+'</div>';
         h+='</div></div></div>';
       });
     }
-    h+='</div>';
+    h+='</div></div>';
     h+='<div class="ft"><span>'+state.length+' found &middot; '+saved+' saved</span>';
     if(saved)h+='<a href="'+libUrl+'" target="_blank">Open Library \u2192</a>';
     h+='</div></body></html>';
@@ -147,6 +164,7 @@ export async function GET(request: NextRequest) {
     win.tog=function(id){state.forEach(function(s){if(s.id===id&&s.status!=='saved')s.sel=!s.sel;});render();};
     win.selAll=function(){state.forEach(function(s){if(s.status!=='saved')s.sel=true;});render();};
     win.upd=function(id,k,v){state.forEach(function(s){if(s.id===id)s[k]=v;});};
+    win.updR=function(id,dim,v){state.forEach(function(s){if(s.id===id)s.ratings[dim]=Number(v);});};
     win.doSave=function(){
       var q=state.filter(function(s){return s.sel&&s.status==='idle';});
       if(!q.length)return;
@@ -158,7 +176,7 @@ export async function GET(request: NextRequest) {
         fetch(saveUrl,{
           method:'POST',credentials:'include',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+rcTok},
-          body:JSON.stringify({image_url:item.src,source_url:pageUrl,title:item.title||undefined,artist:item.artist||undefined,year:item.year||undefined})
+          body:JSON.stringify({image_url:item.src,source_url:pageUrl,title:item.title||undefined,artist:item.artist||undefined,year:item.year||undefined,ratings:item.ratings})
         }).then(function(r){return r.json();}).then(function(d){
           if(d.artworkId){item.status='saved';}
           else{item.status='error';item.err=d.error||'Unknown error';}
