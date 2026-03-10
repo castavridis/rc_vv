@@ -11,15 +11,16 @@ export interface SaveRatingsResult {
 export async function saveArtworkRatings(
   userId: string,
   artworkId: string,
-  ratings: Partial<Record<Trait, number>>
+  ratings: Partial<Record<Trait, { score: number; reason: string }>>
 ): Promise<SaveRatingsResult> {
   const rows = Object.entries(ratings)
-    .filter(([, score]) => score !== undefined)
-    .map(([trait, score]) => ({
+    .filter(([, rating]) => rating !== undefined)
+    .map(([trait, rating]) => ({
       user_id: Number(userId),
       artwork_id: artworkId,
       trait,
-      score: score as number,
+      score: (rating as { score: number; reason: string }).score,
+      reason: (rating as { score: number; reason: string }).reason ?? '',
     }))
 
   if (rows.length === 0) {
@@ -41,16 +42,16 @@ export async function saveArtworkRatings(
 export async function getArtworkRatings(
   userId: string,
   artworkId: string
-): Promise<Partial<Record<Trait, number>>> {
+): Promise<Partial<Record<Trait, { score: number; reason: string }>>> {
   const { data, error } = await supabase
     .from('artwork_ratings')
-    .select('trait, score')
+    .select('trait, score, reason')
     .eq('user_id', Number(userId))
     .eq('artwork_id', artworkId)
 
   if (error || !data) return {}
 
-  return Object.fromEntries(data.map(r => [r.trait, Number(r.score)])) as Partial<Record<Trait, number>>
+  return Object.fromEntries(data.map(r => [r.trait, { score: Number(r.score), reason: r.reason ?? '' }])) as Partial<Record<Trait, { score: number; reason: string }>>
 }
 
 /** Fetch all ratings for a user (for taste profile + similarity) */
