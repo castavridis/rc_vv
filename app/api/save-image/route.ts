@@ -107,7 +107,16 @@ export async function POST(request: NextRequest) {
   if (body.ratings && Object.keys(body.ratings).length > 0) {
     const userId = Number(user.id)
     const rows: { user_id: number; artwork_id: string; trait: string; score: number; reason: string }[] = []
-    for (const dimRating of Object.values(body.ratings)) {
+    for (const [dim, dimRating] of Object.entries(body.ratings)) {
+      // dimension-level score row
+      rows.push({
+        user_id: userId,
+        artwork_id: data.id,
+        trait: dim,
+        score: Math.max(0, Math.min(5, Number(dimRating.score) || 0)),
+        reason: dimRating.reason ?? '',
+      })
+      // per-trait rows
       for (const [trait, tr] of Object.entries(dimRating.traits)) {
         rows.push({
           user_id: userId,
