@@ -12,6 +12,7 @@ interface ArtworkMetadataProps {
   medium?: string | null
   sourceUrl?: string | null
   description?: string | null
+  context?: string | null
   tags?: string[]
 }
 
@@ -24,6 +25,7 @@ export default function ArtworkMetadata({
   medium,
   sourceUrl,
   description,
+  context,
   tags = [],
 }: ArtworkMetadataProps) {
   const [editing, setEditing] = useState(false)
@@ -39,6 +41,7 @@ export default function ArtworkMetadata({
     medium: medium ?? '',
     source_url: sourceUrl ?? '',
     description: description ?? '',
+    context: context ?? '',
     tags,
     tags_raw: tags.join(', '),
   })
@@ -64,6 +67,7 @@ export default function ArtworkMetadata({
       medium: fields.medium || null,
       source_url: fields.source_url || null,
       description: fields.description || null,
+      context: fields.context || null,
       tags: parsedTags,
     }
 
@@ -104,6 +108,13 @@ export default function ArtworkMetadata({
 
         {fields.description && (
           <p className="text-sm text-zinc-600 mt-3">{fields.description}</p>
+        )}
+
+        {fields.context && (
+          <div className="mt-3">
+            <p className="text-xs font-mono text-zinc-400 mb-0.5">Additional Context</p>
+            <p className="text-sm text-zinc-600">{fields.context}</p>
+          </div>
         )}
 
         {fields.tags && fields.tags.length > 0 && (
@@ -210,6 +221,18 @@ export default function ArtworkMetadata({
           value={fields.description ?? ''}
           onChange={handleChange}
           rows={3}
+          className="w-full px-3 py-2 border border-zinc-300 rounded text-sm font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400 resize-none"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-mono text-zinc-500 mb-1">Additional Context</label>
+        <textarea
+          name="context"
+          value={fields.context ?? ''}
+          onChange={handleChange}
+          rows={3}
+          placeholder="Historical background, cultural context, personal associations…"
           className="w-full px-3 py-2 border border-zinc-300 rounded text-sm font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400 resize-none"
         />
       </div>
