@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
     h+='<div class="hd">';
     h+='<div class="hd-left"><h3>facets collector</h3>'+(activeParser?'<span class="parser-badge">'+esc(hostname)+'</span>':'')+' </div>';
     h+='<div class="btns">';
-    h+='<button onclick="window.open(\''+libUrl+'\',\'_blank\')">Open Library \u2197</button>';
+    h+='<button onclick="openLib()">Open Library \u2197</button>';
     h+='<button onclick="selAll()">Select All</button>';
     h+='<button class="pri" onclick="doSave()"'+(sel.length===0||busy?' disabled':'')+'>Save Selected ('+sel.length+')</button>';
     h+='</div></div>';
@@ -304,6 +304,7 @@ export async function GET(request: NextRequest) {
     };}
     var activeThumb=doc.querySelector('.thumb.active');
     if(activeThumb)activeThumb.scrollIntoView({block:'nearest'});
+    win.openLib=function(){window.open(libUrl,'_blank');};
     win.tog=function(id){state.forEach(function(s){if(s.id===id&&s.status!=='saved')s.sel=!s.sel;});render();};
     win.selAll=function(){state.forEach(function(s){if(s.status!=='saved')s.sel=true;});render();};
     win.upd=function(id,k,v){state.forEach(function(s){if(s.id===id)s[k]=v;});};
