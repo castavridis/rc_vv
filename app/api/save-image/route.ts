@@ -29,14 +29,14 @@ export async function POST(request: NextRequest) {
 
   type TraitRating = { score: number; reason: string }
   type DimRating = { score: number; reason: string; traits: Record<string, TraitRating> }
-  let body: { image_url?: string; source_url?: string; title?: string; artist?: string; year?: string; ratings?: Record<string, DimRating>; library_id?: string }
+  let body: { image_url?: string; source_url?: string; title?: string; artist?: string; year?: string; context?: string; ratings?: Record<string, DimRating>; library_id?: string }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400, headers: corsHeaders(request) })
   }
 
-  const { image_url, source_url, title, artist, year } = body
+  const { image_url, source_url, title, artist, year, context } = body
   if (!image_url) {
     return NextResponse.json({ error: 'image_url is required' }, { status: 400, headers: corsHeaders(request) })
   }
@@ -95,7 +95,11 @@ export async function POST(request: NextRequest) {
       tags: [],
       artist: artist ?? null,
       year: year ? parseInt(year, 10) || null : null,
+<<<<<<< HEAD
       library_id: body.library_id ?? null,
+=======
+      context: context ?? null,
+>>>>>>> a7b5c8a (feat: additional context field in bookmarklet)
     })
     .select('id')
     .single()
