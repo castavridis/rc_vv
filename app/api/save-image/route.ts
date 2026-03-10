@@ -29,14 +29,14 @@ export async function POST(request: NextRequest) {
 
   type TraitRating = { score: number; reason: string }
   type DimRating = { score: number; reason: string; traits: Record<string, TraitRating> }
-  let body: { image_url?: string; source_url?: string; title?: string; artist?: string; year?: string; ratings?: Record<string, DimRating> }
+  let body: { image_url?: string; source_url?: string; title?: string; artist?: string; year?: string; context?: string; ratings?: Record<string, DimRating> }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400, headers: corsHeaders(request) })
   }
 
-  const { image_url, source_url, title, artist, year } = body
+  const { image_url, source_url, title, artist, year, context } = body
   if (!image_url) {
     return NextResponse.json({ error: 'image_url is required' }, { status: 400, headers: corsHeaders(request) })
   }
@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
       tags: [],
       artist: artist ?? null,
       year: year ? parseInt(year, 10) || null : null,
+      context: context ?? null,
     })
     .select('id')
     .single()
@@ -106,7 +107,16 @@ export async function POST(request: NextRequest) {
   if (body.ratings && Object.keys(body.ratings).length > 0) {
     const userId = Number(user.id)
     const rows: { user_id: number; artwork_id: string; trait: string; score: number; reason: string }[] = []
-    for (const dimRating of Object.values(body.ratings)) {
+    for (const [dim, dimRating] of Object.entries(body.ratings)) {
+      // dimension-level score row
+      rows.push({
+        user_id: userId,
+        artwork_id: data.id,
+        trait: dim,
+        score: Math.max(0, Math.min(5, Number(dimRating.score) || 0)),
+        reason: dimRating.reason ?? '',
+      })
+      // per-trait rows
       for (const [trait, tr] of Object.entries(dimRating.traits)) {
         rows.push({
           user_id: userId,
