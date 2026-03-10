@@ -10,6 +10,7 @@ export interface UpdateArtworkFields {
   medium?: string | null
   source_url?: string | null
   tags?: string[]
+  context?: string | null
 }
 
 export interface UpdateArtworkResult {

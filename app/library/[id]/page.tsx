@@ -52,6 +52,7 @@ export default async function ArtworkPage({ params }: Props) {
             medium={artwork.medium}
             sourceUrl={artwork.source_url}
             description={artwork.description}
+            context={artwork.context}
             tags={artwork.tags ?? []}
           />
 
