@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
       dimTraits[d].forEach(function(t){traits[t]={score:0,reason:''};});
       ratings[d]={score:0,reason:'',traits:traits};
     });
-    return{id:i,src:im.src,sel:false,title:m.title,creator:m.artist,year:m.year,status:'idle',err:'',ratings:ratings,artworkId:null};
+    return{id:i,src:im.src,sel:false,title:m.title,creator:m.artist,year:m.year,context:'',status:'idle',err:'',ratings:ratings,artworkId:null};
   });
 
   var expanded={};
@@ -198,7 +198,8 @@ export async function GET(request: NextRequest) {
     h+='.row.active{border-color:#18181b}';
     h+='.img-cover{width:100%;height:16px;background-size:cover;background-position:center;background-color:#f4f4f5}';
     h+='.flds{padding:6px 8px;display:flex;flex-direction:column;gap:4px}';
-    h+='input[type=text]{width:100%;padding:3px 5px;border:1px solid #d4d4d8;border-radius:3px;font:inherit}';
+    h+='input[type=text],textarea{width:100%;padding:3px 5px;border:1px solid #d4d4d8;border-radius:3px;font:inherit}';
+    h+='textarea{resize:none;height:42px}';
     h+='.fr{display:flex;gap:4px}';
     h+='.dims{padding:0 8px 6px}';
     h+='.dim-hd{display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;border-top:1px solid #f4f4f5}';
@@ -250,7 +251,9 @@ export async function GET(request: NextRequest) {
         h+='<div class="fr">';
         h+='<input type="text" style="flex:0 0 56px" placeholder="Year" value="'+esc(s.year)+'" oninput="upd('+s.id+',\\'year\\',this.value)" onclick="event.stopPropagation()"'+dis+'>';
         h+='<input type="text" style="flex:1" placeholder="Creator(s)" value="'+esc(s.creator)+'" oninput="upd('+s.id+',\\'creator\\',this.value)" onclick="event.stopPropagation()"'+dis+'>';
-        h+='</div></div>';
+        h+='</div>';
+        h+='<textarea placeholder="Additional context\u2026" oninput="upd('+s.id+',\\'context\\',this.value)" onclick="event.stopPropagation()"'+dis+'>'+esc(s.context)+'</textarea>';
+        h+='</div>';
         h+='<div class="dims">';
         dims.forEach(function(d){
           var dr=s.ratings[d];
@@ -347,7 +350,7 @@ export async function GET(request: NextRequest) {
             dimTraits[d].forEach(function(t){traits[t]={score:0,reason:''};});
             ratings[d]={score:0,reason:'',traits:traits};
           });
-          state.push({id:startId+i,src:im.src,sel:false,title:m.title,creator:m.artist,year:m.year,status:'idle',err:'',ratings:ratings,artworkId:null});
+          state.push({id:startId+i,src:im.src,sel:false,title:m.title,creator:m.artist,year:m.year,context:'',status:'idle',err:'',ratings:ratings,artworkId:null});
         });
         render();
       }
@@ -363,7 +366,7 @@ export async function GET(request: NextRequest) {
         fetch(saveUrl,{
           method:'POST',credentials:'include',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+rcTok},
-          body:JSON.stringify({image_url:item.src,source_url:pageUrl,title:item.title||undefined,artist:item.creator||undefined,year:item.year||undefined,ratings:item.ratings})
+          body:JSON.stringify({image_url:item.src,source_url:pageUrl,title:item.title||undefined,artist:item.creator||undefined,year:item.year||undefined,context:item.context||undefined,ratings:item.ratings})
         }).then(function(r){return r.json();}).then(function(d){
           if(d.artworkId){item.status='saved';item.artworkId=d.artworkId;}
           else{item.status='error';item.err=d.error||'Unknown error';}
