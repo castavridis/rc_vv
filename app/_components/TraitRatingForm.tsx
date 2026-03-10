@@ -7,17 +7,20 @@ import { saveArtworkRatings } from '../_actions/saveArtworkRatings'
 interface TraitRatingFormProps {
   userId: string
   artworkId: string
-  initialRatings: Partial<Record<Trait, { score: number; reason: string }>>
+  initialRatings: Record<string, { score: number; reason: string }>
 }
 
-function getDimensionScore(dimension: Dimension, ratings: Partial<Record<Trait, { score: number; reason: string }>>): number {
+function getDimensionScore(dimension: Dimension, ratings: Record<string, { score: number; reason: string }>): number {
   const traits = Object.values(BRAND_PERSONALITY[dimension]).flat() as Trait[]
   const scored = traits.map(t => (ratings[t]?.score ?? 0))
   return scored.reduce((a, b) => a + b, 0) / traits.length
 }
 
 export default function TraitRatingForm({ userId, artworkId, initialRatings }: TraitRatingFormProps) {
-  const [ratings, setRatings] = useState<Partial<Record<Trait, { score: number; reason: string }>>>(initialRatings)
+  const [ratings, setRatings] = useState<Record<string, { score: number; reason: string }>>(initialRatings)
+  const [dimReasons, setDimReasons] = useState<Record<string, string>>(
+    () => Object.fromEntries(DIMENSIONS.map(d => [d, initialRatings[d]?.reason ?? '']))
+  )
   const [expanded, setExpanded] = useState<Set<Dimension>>(new Set())
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
@@ -43,6 +46,11 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
     })
   }
 
+  function setDimensionReason(dimension: Dimension, reason: string) {
+    setSaved(false)
+    setDimReasons(prev => ({ ...prev, [dimension]: reason }))
+  }
+
   function toggleExpanded(dimension: Dimension) {
     setExpanded(prev => {
       const next = new Set(prev)
@@ -56,7 +64,12 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
     e.preventDefault()
     setError(null)
     startTransition(async () => {
-      const result = await saveArtworkRatings(userId, artworkId, ratings)
+      // Merge dimension-level entries (using dimension name as trait key)
+      const allRatings: Record<string, { score: number; reason: string }> = { ...ratings }
+      DIMENSIONS.forEach(d => {
+        allRatings[d] = { score: Math.round(getDimensionScore(d, ratings)), reason: dimReasons[d] ?? '' }
+      })
+      const result = await saveArtworkRatings(userId, artworkId, allRatings)
       if (result.success) {
         setSaved(true)
       } else {
@@ -75,32 +88,46 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
         return (
           <div key={dimension} className="border border-zinc-200 rounded overflow-hidden">
             {/* Dimension row */}
-            <div className="flex items-center gap-3 px-3 py-2 bg-zinc-50">
-              <button
-                type="button"
-                onClick={() => toggleExpanded(dimension)}
-                className="text-xs font-mono text-zinc-400 w-4 shrink-0 text-left"
-              >
-                {isOpen ? '▾' : '▸'}
-              </button>
-              <span
-                className="text-sm font-semibold font-mono text-zinc-700 w-32 shrink-0 cursor-pointer"
-                onClick={() => toggleExpanded(dimension)}
-              >
-                {dimension}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={5}
-                step={1}
-                value={Math.round(dimScore)}
-                onChange={e => setDimension(dimension, Number(e.target.value))}
-                className="flex-1 accent-zinc-800"
-              />
-              <span className="text-sm font-mono w-6 text-right text-zinc-500">
-                {dimScore.toFixed(1)}
-              </span>
+            <div className="px-3 py-2 bg-zinc-50">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(dimension)}
+                  className="text-xs font-mono text-zinc-400 w-4 shrink-0 text-left"
+                >
+                  {isOpen ? '▾' : '▸'}
+                </button>
+                <span
+                  className="text-sm font-semibold font-mono text-zinc-700 w-32 shrink-0 cursor-pointer"
+                  onClick={() => toggleExpanded(dimension)}
+                >
+                  {dimension}
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={5}
+                  step={1}
+                  value={Math.round(dimScore)}
+                  onChange={e => setDimension(dimension, Number(e.target.value))}
+                  className="flex-1 accent-zinc-800"
+                />
+                <span className="text-sm font-mono w-6 text-right text-zinc-500">
+                  {dimScore.toFixed(1)}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className="w-4 shrink-0" />
+                <span className="w-32 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Reason…"
+                  value={dimReasons[dimension] ?? ''}
+                  onChange={e => setDimensionReason(dimension, e.target.value)}
+                  className="flex-1 text-xs font-mono px-2 py-1 border border-zinc-200 rounded text-zinc-600"
+                />
+                <span className="w-6 shrink-0" />
+              </div>
             </div>
 
             {/* Trait rows (collapsible) */}
