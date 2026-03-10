@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   type TraitRating = { score: number; reason: string }
   type DimRating = { score: number; reason: string; traits: Record<string, TraitRating> }
-  let body: { image_url?: string; source_url?: string; title?: string; artist?: string; year?: string; ratings?: Record<string, DimRating> }
+  let body: { image_url?: string; source_url?: string; title?: string; artist?: string; year?: string; ratings?: Record<string, DimRating>; library_id?: string }
   try {
     body = await request.json()
   } catch {
@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
       tags: [],
       artist: artist ?? null,
       year: year ? parseInt(year, 10) || null : null,
+      library_id: body.library_id ?? null,
     })
     .select('id')
     .single()
