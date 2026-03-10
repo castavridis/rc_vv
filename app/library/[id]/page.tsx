@@ -3,6 +3,7 @@ import { getUser } from '../../_lib/auth/session'
 import supabase from '../../_actions/supabase'
 import { getArtworkRatings } from '../../_actions/saveArtworkRatings'
 import TraitRatingForm from '../../_components/TraitRatingForm'
+import ArtworkMetadata from '../../_components/ArtworkMetadata'
 import Link from 'next/link'
 
 interface Props {
@@ -32,36 +33,41 @@ export default async function ArtworkPage({ params }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
         <div>
-          <div className="aspect-square rounded overflow-hidden bg-zinc-100">
+          <div className="rounded overflow-hidden bg-zinc-100">
             <img
               src={artwork.image_url}
               alt={artwork.title}
-              className="w-full h-full object-cover"
+              className="w-full h-auto block"
             />
-          </div>
-          <div className="mt-3">
-            <h1 className="text-lg font-semibold">{artwork.title}</h1>
-            {(artwork.artist || artwork.year) && (
-              <p className="text-sm text-zinc-500">
-                {[artwork.artist, artwork.year].filter(Boolean).join(' · ')}
-              </p>
-            )}
           </div>
         </div>
 
-        <div>
-          <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-6">
-            Rate this artwork
-          </h2>
-          <p className="text-sm text-zinc-500 mb-6">
-            Score each trait 0–5. 0 = not at all representative, 5 = maximally representative.
-            You only need to score traits that feel relevant.
-          </p>
-          <TraitRatingForm
-            userId={user.id}
+        <div className="space-y-6">
+          <ArtworkMetadata
             artworkId={artwork.id}
-            initialRatings={existingRatings}
+            userId={user.id}
+            title={artwork.title}
+            artist={artwork.artist}
+            year={artwork.year}
+            medium={artwork.medium}
+            sourceUrl={artwork.source_url}
+            description={artwork.description}
+            tags={artwork.tags ?? []}
           />
+
+          <div className="border-t border-zinc-100 pt-6">
+            <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1">
+              Brand Personality
+            </h2>
+            <p className="text-xs text-zinc-400 mb-4">
+              Score each dimension 0–5. Expand to fine-tune individual traits.
+            </p>
+            <TraitRatingForm
+              userId={user.id}
+              artworkId={artwork.id}
+              initialRatings={existingRatings}
+            />
+          </div>
         </div>
       </div>
     </div>

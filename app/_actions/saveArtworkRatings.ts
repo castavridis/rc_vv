@@ -16,7 +16,7 @@ export async function saveArtworkRatings(
   const rows = Object.entries(ratings)
     .filter(([, score]) => score !== undefined)
     .map(([trait, score]) => ({
-      user_id: userId,
+      user_id: Number(userId),
       artwork_id: artworkId,
       trait,
       score: score as number,
@@ -45,12 +45,12 @@ export async function getArtworkRatings(
   const { data, error } = await supabase
     .from('artwork_ratings')
     .select('trait, score')
-    .eq('user_id', userId)
+    .eq('user_id', Number(userId))
     .eq('artwork_id', artworkId)
 
   if (error || !data) return {}
 
-  return Object.fromEntries(data.map(r => [r.trait, r.score])) as Partial<Record<Trait, number>>
+  return Object.fromEntries(data.map(r => [r.trait, Number(r.score)])) as Partial<Record<Trait, number>>
 }
 
 /** Fetch all ratings for a user (for taste profile + similarity) */
@@ -60,7 +60,7 @@ export async function getAllUserRatings(
   const { data, error } = await supabase
     .from('artwork_ratings')
     .select('trait, score, artwork_id')
-    .eq('user_id', userId)
+    .eq('user_id', Number(userId))
 
   if (error || !data) return []
   return data
@@ -71,7 +71,7 @@ export async function getRatedArtworkIds(userId: string): Promise<Set<string>> {
   const { data, error } = await supabase
     .from('artwork_ratings')
     .select('artwork_id')
-    .eq('user_id', userId)
+    .eq('user_id', Number(userId))
 
   if (error || !data) return new Set()
   return new Set(data.map(r => r.artwork_id))
