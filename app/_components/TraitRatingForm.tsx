@@ -10,16 +10,16 @@ interface TraitRatingFormProps {
   initialRatings: Record<string, { score: number; reason: string }>
 }
 
-function getDimensionScore(dimension: Dimension, ratings: Record<string, { score: number; reason: string }>): number {
-  const traits = Object.values(BRAND_PERSONALITY[dimension]).flat() as Trait[]
-  const scored = traits.map(t => (ratings[t]?.score ?? 0))
-  return scored.reduce((a, b) => a + b, 0) / traits.length
-}
-
 export default function TraitRatingForm({ userId, artworkId, initialRatings }: TraitRatingFormProps) {
-  const [ratings, setRatings] = useState<Record<string, { score: number; reason: string }>>(initialRatings)
-  const [dimReasons, setDimReasons] = useState<Record<string, string>>(
-    () => Object.fromEntries(DIMENSIONS.map(d => [d, initialRatings[d]?.reason ?? '']))
+  const [traitRatings, setTraitRatings] = useState<Record<string, { score: number; reason: string }>>(
+    () => Object.fromEntries(
+      Object.entries(initialRatings).filter(([key]) => !DIMENSIONS.includes(key as Dimension))
+    )
+  )
+  const [dimRatings, setDimRatings] = useState<Record<string, { score: number; reason: string }>>(
+    () => Object.fromEntries(
+      DIMENSIONS.map(d => [d, initialRatings[d] ?? { score: 0, reason: '' }])
+    )
   )
   const [expanded, setExpanded] = useState<Set<Dimension>>(new Set())
   const [isPending, startTransition] = useTransition()
@@ -28,27 +28,22 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
 
   function setTrait(trait: Trait, value: number) {
     setSaved(false)
-    setRatings(prev => ({ ...prev, [trait]: { ...prev[trait], score: value } }))
+    setTraitRatings(prev => ({ ...prev, [trait]: { ...prev[trait], score: value } }))
   }
 
   function setTraitReason(trait: Trait, reason: string) {
     setSaved(false)
-    setRatings(prev => ({ ...prev, [trait]: { score: prev[trait]?.score ?? 0, reason } }))
+    setTraitRatings(prev => ({ ...prev, [trait]: { score: prev[trait]?.score ?? 0, reason } }))
   }
 
-  function setDimension(dimension: Dimension, value: number) {
+  function setDimensionScore(dimension: Dimension, value: number) {
     setSaved(false)
-    const traits = Object.values(BRAND_PERSONALITY[dimension]).flat() as Trait[]
-    setRatings(prev => {
-      const next = { ...prev }
-      traits.forEach(t => { next[t] = { score: value, reason: prev[t]?.reason ?? '' } })
-      return next
-    })
+    setDimRatings(prev => ({ ...prev, [dimension]: { ...prev[dimension], score: value } }))
   }
 
   function setDimensionReason(dimension: Dimension, reason: string) {
     setSaved(false)
-    setDimReasons(prev => ({ ...prev, [dimension]: reason }))
+    setDimRatings(prev => ({ ...prev, [dimension]: { ...prev[dimension], reason } }))
   }
 
   function toggleExpanded(dimension: Dimension) {
@@ -64,11 +59,7 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
     e.preventDefault()
     setError(null)
     startTransition(async () => {
-      // Merge dimension-level entries (using dimension name as trait key)
-      const allRatings: Record<string, { score: number; reason: string }> = { ...ratings }
-      DIMENSIONS.forEach(d => {
-        allRatings[d] = { score: Math.round(getDimensionScore(d, ratings)), reason: dimReasons[d] ?? '' }
-      })
+      const allRatings: Record<string, { score: number; reason: string }> = { ...traitRatings, ...dimRatings }
       const result = await saveArtworkRatings(userId, artworkId, allRatings)
       if (result.success) {
         setSaved(true)
@@ -81,7 +72,7 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {DIMENSIONS.map(dimension => {
-        const dimScore = getDimensionScore(dimension, ratings)
+        const dimScore = dimRatings[dimension]?.score ?? 0
         const isOpen = expanded.has(dimension)
         const traits = Object.values(BRAND_PERSONALITY[dimension]).flat() as Trait[]
 
@@ -108,12 +99,12 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
                   min={0}
                   max={5}
                   step={1}
-                  value={Math.round(dimScore)}
-                  onChange={e => setDimension(dimension, Number(e.target.value))}
+                  value={dimScore}
+                  onChange={e => setDimensionScore(dimension, Number(e.target.value))}
                   className="flex-1 accent-zinc-800"
                 />
                 <span className="text-sm font-mono w-6 text-right text-zinc-500">
-                  {dimScore.toFixed(1)}
+                  {dimScore}
                 </span>
               </div>
               <div className="flex items-center gap-3 mt-1.5">
@@ -122,7 +113,7 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
                 <input
                   type="text"
                   placeholder="Reason…"
-                  value={dimReasons[dimension] ?? ''}
+                  value={dimRatings[dimension]?.reason ?? ''}
                   onChange={e => setDimensionReason(dimension, e.target.value)}
                   className="flex-1 text-xs font-mono px-2 py-1 border border-zinc-200 rounded text-zinc-600"
                 />
@@ -134,7 +125,7 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
             {isOpen && (
               <div className="px-3 py-2 border-t border-zinc-100">
                 {traits.map(trait => {
-                  const score = ratings[trait]?.score ?? 0
+                  const score = traitRatings[trait]?.score ?? 0
                   return (
                     <div key={trait} className="pl-5 py-1 border-b border-zinc-50 last:border-0">
                       <div className="flex items-center gap-3">
@@ -155,7 +146,7 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
                         <input
                           type="text"
                           placeholder="Reason…"
-                          value={ratings[trait]?.reason ?? ''}
+                          value={traitRatings[trait]?.reason ?? ''}
                           onChange={e => setTraitReason(trait, e.target.value)}
                           className="flex-1 text-xs font-mono px-2 py-1 border border-zinc-200 rounded text-zinc-600"
                         />

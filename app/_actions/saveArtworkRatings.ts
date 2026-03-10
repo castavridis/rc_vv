@@ -14,7 +14,7 @@ export async function saveArtworkRatings(
   ratings: Record<string, { score: number; reason: string }>
 ): Promise<SaveRatingsResult> {
   const rows = Object.entries(ratings)
-    .filter(([, rating]) => rating !== undefined)
+    .filter(([, rating]) => rating !== undefined && rating.score !== 0)
     .map(([trait, rating]) => ({
       user_id: Number(userId),
       artwork_id: artworkId,
