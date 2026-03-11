@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   const saveUrl = `${origin}/api/save-image`
   const libraryUrl = `${origin}/library`
   const librariesUrl = `${origin}/api/libraries`
+  const libCountsUrl = `${origin}/api/library-counts`
   const updateRatingsUrl = `${origin}/api/update-ratings`
   const tok = request.nextUrl.searchParams.get('tok') ?? ''
 
@@ -17,6 +18,8 @@ export async function GET(request: NextRequest) {
   var libraries=[];
   var selectedLibraryId=null;
   var updateRatingsUrl=${JSON.stringify(updateRatingsUrl)};
+  var libCountsUrl=${JSON.stringify(libCountsUrl)};
+  var dbDimCounts={Sincerity:0,Excitement:0,Competence:0,Sophistication:0,Ruggedness:0};
 
   function getBestSrc(img){
     var lazy=img.getAttribute('data-src')||img.getAttribute('data-lazy-src')||img.getAttribute('data-original')||'';
@@ -165,11 +168,19 @@ export async function GET(request: NextRequest) {
     }).catch(function(){});
   }
   
+  function fetchDbCounts(){
+    var url=libCountsUrl+(selectedLibraryId?'?lib='+encodeURIComponent(selectedLibraryId):'');
+    fetch(url,{credentials:'include',headers:{'Authorization':'Bearer '+rcTok}})
+      .then(function(r){return r.json();})
+      .then(function(d){if(d&&typeof d==='object'&&!d.error){dbDimCounts=d;render();}})
+      .catch(function(){});
+  }
+
   function renderLibrarySelect(){render();}
 
   fetch(librariesUrl,{credentials:'include',headers:{'Authorization':'Bearer '+rcTok}})
     .then(function(r){return r.json();})
-    .then(function(d){if(Array.isArray(d)){libraries=d;selectedLibraryId=d[0]&&d[0].id||null;renderLibrarySelect();}})
+    .then(function(d){if(Array.isArray(d)){libraries=d;selectedLibraryId=d[0]&&d[0].id||null;fetchDbCounts();renderLibrarySelect();}})
     .catch(function(){});
 
   var win=window.open('','_blank','width=1100,height=800,resizable=yes,location=no');
@@ -238,23 +249,25 @@ export async function GET(request: NextRequest) {
     h+='</div></div>';
     h+='<div style="padding:6px 12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:8px">';
     h+='<span style="font-size:10px;color:#71717a">Library:</span>';
-    h+='<select onchange="selectedLibraryId=this.value||null" style="font:inherit;font-size:11px;border:1px solid #d4d4d8;border-radius:3px;padding:2px 4px">';
+    h+='<select onchange="selectedLibraryId=this.value||null;fetchDbCounts()" style="font:inherit;font-size:11px;border:1px solid #d4d4d8;border-radius:3px;padding:2px 4px">';
     h+='<option value="">— none —</option>';
     libraries.forEach(function(lib){
       h+='<option value="'+esc(lib.id)+'"'+(selectedLibraryId===lib.id?' selected':'')+'>'+esc(lib.name)+'</option>';
     });
     h+='</select>';
-    var dimCounts={};
-    dims.forEach(function(d){dimCounts[d]=0;});
+    var localCounts={};
+    dims.forEach(function(d){localCounts[d]=0;});
     state.forEach(function(s){
       if(s.status==='saved'){
-        dims.forEach(function(d){if(s.ratings[d].score>=4)dimCounts[d]++;});
+        dims.forEach(function(d){if(s.ratings[d].score>=4)localCounts[d]++;});
       }
     });
     h+='<span style="margin-left:auto;display:flex;gap:6px">';
     dims.forEach(function(d){
-      var c=dimCounts[d];
-      h+='<span style="font-size:9px;color:'+(c>0?'#18181b':'#a1a1aa')+'" title="'+d+': '+c+' rated 4/5">'+d.slice(0,3)+' <b>'+c+'</b></span>';
+      var db=dbDimCounts[d]||0;
+      var local=localCounts[d]||0;
+      var total=db+local;
+      h+='<span style="font-size:9px;color:'+(total>0?'#18181b':'#a1a1aa')+'" title="'+d+': '+total+' rated 4/5 ('+db+' saved + '+local+' this session)">'+d.slice(0,3)+' <b>'+total+'</b></span>';
     });
     h+='</span>';
     h+='</div>';
@@ -348,6 +361,7 @@ export async function GET(request: NextRequest) {
     var activeThumb=doc.querySelector('.thumb.active');
     if(activeThumb)activeThumb.scrollIntoView({block:'nearest'});
     win.openLib=function(){window.open(libUrl,'_blank');};
+    win.fetchDbCounts=fetchDbCounts;
     win.tog=function(id){state.forEach(function(s){if(s.id===id&&s.status!=='saved')s.sel=!s.sel;});render();};
     win.selAll=function(){state.forEach(function(s){if(s.status!=='saved')s.sel=true;});render();};
     win.upd=function(id,k,v){state.forEach(function(s){if(s.id===id)s[k]=v;});};
