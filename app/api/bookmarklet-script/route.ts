@@ -4,7 +4,9 @@ export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin
   const saveUrl = `${origin}/api/save-image`
   const libraryUrl = `${origin}/library`
+  const librariesUrl = `${origin}/api/libraries`
   const updateRatingsUrl = `${origin}/api/update-ratings`
+  const librariesUrl = `${origin}/api/libraries`
   const tok = request.nextUrl.searchParams.get('tok') ?? ''
 
   const script = `(function(){
@@ -12,7 +14,13 @@ export async function GET(request: NextRequest) {
   var pageUrl=window.location.href;
   var saveUrl=${JSON.stringify(saveUrl)};
   var libUrl=${JSON.stringify(libraryUrl)};
+  var librariesUrl=${JSON.stringify(librariesUrl)};
+  var libraries=[];
+  var selectedLibraryId=null;
   var updateRatingsUrl=${JSON.stringify(updateRatingsUrl)};
+  var librariesUrl=${JSON.stringify(librariesUrl)};
+  var libraries=[];
+  var selectedLibraryId=null;
 
   function getBestSrc(img){
     var lazy=img.getAttribute('data-src')||img.getAttribute('data-lazy-src')||img.getAttribute('data-original')||'';
@@ -160,6 +168,13 @@ export async function GET(request: NextRequest) {
       body:JSON.stringify({artwork_id:item.artworkId,ratings:item.ratings})
     }).catch(function(){});
   }
+  
+  function renderLibrarySelect(){render();}
+
+  fetch(librariesUrl,{credentials:'include',headers:{'Authorization':'Bearer '+rcTok}})
+    .then(function(r){return r.json();})
+    .then(function(d){if(Array.isArray(d)){libraries=d;selectedLibraryId=d[0]&&d[0].id||null;renderLibrarySelect();}})
+    .catch(function(){});
 
   var win=window.open('','_blank','width=860,height=700,resizable=yes,location=no');
   var doc=win.document;
@@ -224,6 +239,14 @@ export async function GET(request: NextRequest) {
     h+='<button onclick="selAll()">Select All</button>';
     h+='<button class="pri" onclick="doSave()"'+(sel.length===0||busy?' disabled':'')+'>Save Selected ('+sel.length+')</button>';
     h+='</div></div>';
+    h+='<div style="padding:6px 12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:8px">';
+    h+='<span style="font-size:10px;color:#71717a">Library:</span>';
+    h+='<select onchange="selectedLibraryId=this.value||null" style="font:inherit;font-size:11px;border:1px solid #d4d4d8;border-radius:3px;padding:2px 4px">';
+    h+='<option value="">— none —</option>';
+    libraries.forEach(function(lib){
+      h+='<option value="'+esc(lib.id)+'"'+(selectedLibraryId===lib.id?' selected':'')+'>'+esc(lib.name)+'</option>';
+    });
+    h+='</select></div>';
     h+='<div class="bd"><div class="lp"><div class="grid">';
     state.forEach(function(s){
       var isActive=(s.id===activeId);
@@ -367,7 +390,7 @@ export async function GET(request: NextRequest) {
         fetch(saveUrl,{
           method:'POST',credentials:'include',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+rcTok},
-          body:JSON.stringify({image_url:item.src,source_url:pageUrl,title:item.title||undefined,artist:item.creator||undefined,year:item.year||undefined,context:item.context||undefined,ratings:item.ratings})
+          body:JSON.stringify({image_url:item.src,source_url:pageUrl,title:item.title||undefined,artist:item.creator||undefined,year:item.year||undefined,context:item.context||undefined,ratings:item.ratings,library_id:selectedLibraryId||undefined})
         }).then(function(r){return r.json();}).then(function(d){
           if(d.artworkId){item.status='saved';item.artworkId=d.artworkId;}
           else{item.status='error';item.err=d.error||'Unknown error';}

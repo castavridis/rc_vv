@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { getUser } from '../_lib/auth/session'
 import supabase from '../_actions/supabase'
 import { getRatedArtworkIds, getAllUserRatings } from '../_actions/saveArtworkRatings'
@@ -7,18 +8,32 @@ import ArtworkCard from '../_components/ArtworkCard'
 import TasteProfileSummary from '../_components/TasteProfileSummary'
 import LibraryHeader from '../_components/LibraryHeader'
 
-export default async function LibraryPage() {
+interface Props {
+  searchParams: Promise<{ lib?: string }>
+}
+
+export default async function LibraryPage({ searchParams }: Props) {
   const user = await getUser()
   if (!user) redirect('/')
 
-  const [{ data: artworks }, ratedIds, allRatings] = await Promise.all([
-    supabase
-      .from('artworks')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }),
+  const { lib } = await searchParams
+
+  // Build artworks query
+  let artworksQuery = supabase
+    .from('artworks')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (lib) {
+    artworksQuery = artworksQuery.eq('library_id', lib)
+  }
+
+  const [{ data: artworks }, ratedIds, allRatings, libraryName] = await Promise.all([
+    artworksQuery,
     getRatedArtworkIds(user.id),
     getAllUserRatings(user.id),
+    lib ? supabase.from('libraries').select('name').eq('id', lib).single().then(r => r.data?.name ?? null) : Promise.resolve(null),
   ])
 
   const profile = aggregateRatings(allRatings)
@@ -26,6 +41,16 @@ export default async function LibraryPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
+      {lib && (
+        <div className="mb-4">
+          <Link href="/libraries" className="text-xs font-mono text-zinc-400 hover:text-zinc-600">
+            ← All Libraries
+          </Link>
+          {libraryName && (
+            <h1 className="text-lg font-mono font-semibold text-zinc-800 mt-2">{libraryName}</h1>
+          )}
+        </div>
+      )}
       <LibraryHeader userId={user.id} />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
