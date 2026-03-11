@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
   const libraryUrl = `${origin}/library`
   const librariesUrl = `${origin}/api/libraries`
   const updateRatingsUrl = `${origin}/api/update-ratings`
+  const librariesUrl = `${origin}/api/libraries`
   const tok = request.nextUrl.searchParams.get('tok') ?? ''
 
   const script = `(function(){
@@ -17,6 +18,9 @@ export async function GET(request: NextRequest) {
   var libraries=[];
   var selectedLibraryId=null;
   var updateRatingsUrl=${JSON.stringify(updateRatingsUrl)};
+  var librariesUrl=${JSON.stringify(librariesUrl)};
+  var libraries=[];
+  var selectedLibraryId=null;
 
   function getBestSrc(img){
     var lazy=img.getAttribute('data-src')||img.getAttribute('data-lazy-src')||img.getAttribute('data-original')||'';

@@ -95,11 +95,8 @@ export async function POST(request: NextRequest) {
       tags: [],
       artist: artist ?? null,
       year: year ? parseInt(year, 10) || null : null,
-<<<<<<< HEAD
-      library_id: body.library_id ?? null,
-=======
       context: context ?? null,
->>>>>>> a7b5c8a (feat: additional context field in bookmarklet)
+      library_id: body.library_id ?? null,
     })
     .select('id')
     .single()
