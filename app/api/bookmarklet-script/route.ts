@@ -243,7 +243,21 @@ export async function GET(request: NextRequest) {
     libraries.forEach(function(lib){
       h+='<option value="'+esc(lib.id)+'"'+(selectedLibraryId===lib.id?' selected':'')+'>'+esc(lib.name)+'</option>';
     });
-    h+='</select></div>';
+    h+='</select>';
+    var dimCounts={};
+    dims.forEach(function(d){dimCounts[d]=0;});
+    state.forEach(function(s){
+      if(s.status==='saved'){
+        dims.forEach(function(d){if(s.ratings[d].score>=4)dimCounts[d]++;});
+      }
+    });
+    h+='<span style="margin-left:auto;display:flex;gap:6px">';
+    dims.forEach(function(d){
+      var c=dimCounts[d];
+      h+='<span style="font-size:9px;color:'+(c>0?'#18181b':'#a1a1aa')+'" title="'+d+': '+c+' rated 4/5">'+d.slice(0,3)+' <b>'+c+'</b></span>';
+    });
+    h+='</span>';
+    h+='</div>';
     h+='<div class="bd"><div class="lp"><div class="grid">';
     state.forEach(function(s){
       var isActive=(s.id===activeId);
@@ -298,8 +312,10 @@ export async function GET(request: NextRequest) {
               var applies=tr.score>=1;
               h+='<div class="trait-row">';
               h+='<span class="trait-name">'+esc(t)+'</span>';
-              h+='<button style="width:28px;height:16px;border-radius:8px;border:none;background:'+(applies?'#18181b':'#d4d4d8')+';position:relative;cursor:pointer;flex-shrink:0" onclick="updTS('+s.id+',\\''+d+'\\',\\''+esc(t)+'\\','+(applies?'0':'1')+');event.stopPropagation()"'+dis+'><span style="position:absolute;top:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .15s;left:'+(applies?'14px':'2px')+'"></span></button>';
-              h+='<span style="font-size:9px;color:'+(applies?'#18181b':'#a1a1aa')+';width:12px">'+(applies?'\u2713':'\u2013')+'</span>';
+              h+='<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;flex-shrink:0" onclick="event.stopPropagation()">';
+              h+='<input type="checkbox" '+(applies?'checked ':'')+' onchange="updTS('+s.id+',\\''+d+'\\',\\''+esc(t)+'\\',this.checked?1:0);event.stopPropagation()" style="accent-color:#18181b;width:14px;height:14px"'+dis+'>';
+              h+='<span style="font-size:9px;color:'+(applies?'#18181b':'#a1a1aa')+'">'+(applies?'\u2713':'\u2013')+'</span>';
+              h+='</label>';
               h+='<textarea class="reason-in" placeholder="Reason\u2026" oninput="updTR('+s.id+',\\''+d+'\\',\\''+esc(t)+'\\',this.value)" onclick="event.stopPropagation()"'+dis+' style="height:24px;resize:vertical;font-size:9px">'+esc(tr.reason)+'</textarea>';
               h+='</div>';
             });

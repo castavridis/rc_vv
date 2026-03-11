@@ -40,23 +40,32 @@ export default function AssessmentResult({ traits, contextArtworks }: Assessment
 
       <div className="space-y-6">
         {DIMENSIONS.map(dimension => {
-          const traits = Object.values(BRAND_PERSONALITY[dimension]).flat() as Trait[]
+          const facets = BRAND_PERSONALITY[dimension]
+          const allTraits = Object.values(facets).flat() as Trait[]
+          const dimApplies = allTraits.filter(t => (scoreMap[t] ?? 0) >= 0.5).length
+          const dimScore = allTraits.length > 0
+            ? Math.round((dimApplies / allTraits.length) * 5 * 10) / 10
+            : 0
+
           return (
             <div key={dimension}>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-3">
-                {dimension}
-              </h3>
-              <div className="space-y-1.5">
-                {traits.map(trait => {
-                  const score = scoreMap[trait] ?? 0
-                  const applies = score >= 0.5
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-400">
+                  {dimension}
+                </h3>
+                <span className="text-xs font-mono text-zinc-500 font-semibold">{dimScore}</span>
+              </div>
+
+              <div className="space-y-0.5 ml-1">
+                {allTraits.map(trait => {
+                  const applies = (scoreMap[trait] ?? 0) >= 0.5
                   return (
-                    <div key={trait} className="flex items-center gap-3">
-                      <span className={`text-xs font-mono w-32 shrink-0 ${applies ? 'text-zinc-800 font-semibold' : 'text-zinc-400'}`}>
-                        {trait}
-                      </span>
-                      <span className={`text-xs font-mono ${applies ? 'text-zinc-800' : 'text-zinc-300'}`}>
+                    <div key={trait} className="flex items-center gap-2">
+                      <span className={`text-[10px] font-mono ${applies ? 'text-zinc-700' : 'text-zinc-300'}`}>
                         {applies ? '●' : '○'}
+                      </span>
+                      <span className={`text-xs font-mono ${applies ? 'text-zinc-700' : 'text-zinc-400'}`}>
+                        {trait}
                       </span>
                     </div>
                   )

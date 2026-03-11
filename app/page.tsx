@@ -35,6 +35,12 @@ export default async function HomePage() {
         </div>
         <div className="flex items-center gap-3">
           <Link
+            href="/brands"
+            className="px-4 py-2 text-sm font-mono text-zinc-600 border border-zinc-200 rounded hover:border-zinc-400"
+          >
+            Brands
+          </Link>
+          <Link
             href="/libraries"
             className="px-4 py-2 text-sm font-mono text-zinc-600 border border-zinc-200 rounded hover:border-zinc-400"
           >

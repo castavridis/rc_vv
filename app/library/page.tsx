@@ -37,9 +37,29 @@ export default async function LibraryPage({ searchParams }: Props) {
     supabase.from('libraries').select('id, name').eq('user_id', user.id).order('name'),
   ])
 
-  const profile = aggregateRatings(allRatings)
-  const totalRated = ratedIds.size
+  // When filtering by library, only use ratings from artworks in this library
+  const artworkIdsInView = new Set((artworks ?? []).map(a => a.id))
+  const filteredRatings = lib
+    ? allRatings.filter(r => artworkIdsInView.has(r.artwork_id))
+    : allRatings
+
+  const profile = aggregateRatings(filteredRatings)
+  const totalRated = lib
+    ? (artworks ?? []).filter(a => ratedIds.has(a.id)).length
+    : ratedIds.size
   const libraryList = (libraries ?? []).map(l => ({ id: l.id, name: l.name }))
+
+  // Count artworks rated 4/5 per dimension
+  const dimensionNames = ['Sincerity', 'Excitement', 'Competence', 'Sophistication', 'Ruggedness']
+  const dimCounts: Record<string, number> = {}
+  for (const dim of dimensionNames) {
+    const artworksWithHighRating = new Set(
+      filteredRatings
+        .filter(r => r.trait === dim && r.score >= 4)
+        .map(r => r.artwork_id)
+    )
+    dimCounts[dim] = artworksWithHighRating.size
+  }
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
@@ -60,7 +80,7 @@ export default async function LibraryPage({ searchParams }: Props) {
           <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-4">
             Taste Profile
           </h2>
-          <TasteProfileSummary profile={profile} totalRated={totalRated} />
+          <TasteProfileSummary profile={profile} totalRated={totalRated} dimensionCounts={dimCounts} />
         </aside>
 
         <main className="lg:col-span-3">
