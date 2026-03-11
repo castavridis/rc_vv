@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.color-meanings.com)",
+      "Bash(cd /Users/cstavridis/Git/rc_vv/.claude/worktrees/agent-a5f1606a && pnpm build 2>&1 | tail -30)",
+      "Bash(pnpm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
