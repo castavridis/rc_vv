@@ -6,7 +6,6 @@ export async function GET(request: NextRequest) {
   const libraryUrl = `${origin}/library`
   const librariesUrl = `${origin}/api/libraries`
   const updateRatingsUrl = `${origin}/api/update-ratings`
-  const librariesUrl = `${origin}/api/libraries`
   const tok = request.nextUrl.searchParams.get('tok') ?? ''
 
   const script = `(function(){
@@ -18,9 +17,6 @@ export async function GET(request: NextRequest) {
   var libraries=[];
   var selectedLibraryId=null;
   var updateRatingsUrl=${JSON.stringify(updateRatingsUrl)};
-  var librariesUrl=${JSON.stringify(librariesUrl)};
-  var libraries=[];
-  var selectedLibraryId=null;
 
   function getBestSrc(img){
     var lazy=img.getAttribute('data-src')||img.getAttribute('data-lazy-src')||img.getAttribute('data-original')||'';
@@ -147,7 +143,7 @@ export async function GET(request: NextRequest) {
       dimTraits[d].forEach(function(t){traits[t]={score:0,reason:''};});
       ratings[d]={score:0,reason:'',traits:traits};
     });
-    return{id:i,src:im.src,sel:false,title:m.title,creator:m.artist,year:m.year,context:'',status:'idle',err:'',ratings:ratings,artworkId:null};
+    return{id:i,src:im.src,sel:false,title:m.title,creator:m.artist,year:m.year,context:'',medium:'',tags:'',status:'idle',err:'',ratings:ratings,artworkId:null};
   });
 
   var expanded={};
@@ -176,14 +172,15 @@ export async function GET(request: NextRequest) {
     .then(function(d){if(Array.isArray(d)){libraries=d;selectedLibraryId=d[0]&&d[0].id||null;renderLibrarySelect();}})
     .catch(function(){});
 
-  var win=window.open('','_blank','width=860,height=700,resizable=yes,location=no');
+  var win=window.open('','_blank','width=1100,height=800,resizable=yes,location=no');
   var doc=win.document;
 
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
   function render(){
-    var sel=state.filter(function(s){return s.sel;});
+    var sel=state.filter(function(s){return s.sel&&s.status!=='saved';});
     var saved=state.filter(function(s){return s.status==='saved';}).length;
+    var unsaved=state.filter(function(s){return s.sel&&s.status!=='saved';}).length;
     var busy=state.some(function(s){return s.status==='saving';});
     var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>facets collector</title><style>';
     h+='*{box-sizing:border-box;margin:0;padding:0;font-family:monospace;font-size:12px}';
@@ -237,7 +234,7 @@ export async function GET(request: NextRequest) {
     h+='<div class="btns">';
     h+='<button onclick="openLib()">Open Library \u2197</button>';
     h+='<button onclick="selAll()">Select All</button>';
-    h+='<button class="pri" onclick="doSave()"'+(sel.length===0||busy?' disabled':'')+'>Save Selected ('+sel.length+')</button>';
+    h+='<button class="pri" onclick="doSave()"'+(unsaved===0||busy?' disabled':'')+'>Save Selected ('+unsaved+')</button>';
     h+='</div></div>';
     h+='<div style="padding:6px 12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:8px">';
     h+='<span style="font-size:10px;color:#71717a">Library:</span>';
@@ -250,7 +247,8 @@ export async function GET(request: NextRequest) {
     h+='<div class="bd"><div class="lp"><div class="grid">';
     state.forEach(function(s){
       var isActive=(s.id===activeId);
-      h+='<div class="thumb'+(s.sel?' sel':'')+(isActive?' active':'')+'" onclick="tog('+s.id+')">';
+      var isSaved=(s.status==='saved');
+      h+='<div class="thumb'+(s.sel?' sel':'')+(isActive?' active':'')+(isSaved?' saved':'')+'" onclick="tog('+s.id+')"'+(isSaved?' style="opacity:0.4;pointer-events:none"':'')+'>';
       if(isActive){
         h+='<img src="'+esc(s.src)+'" style="width:100%;height:auto;object-fit:unset" onerror="this.parentNode.style.display=\\'none\\'">';
       }else{
@@ -276,6 +274,10 @@ export async function GET(request: NextRequest) {
         h+='<input type="text" style="flex:1" placeholder="Creator(s)" value="'+esc(s.creator)+'" oninput="upd('+s.id+',\\'creator\\',this.value)" onclick="event.stopPropagation()"'+dis+'>';
         h+='</div>';
         h+='<textarea placeholder="Additional context\u2026" oninput="upd('+s.id+',\\'context\\',this.value)" onclick="event.stopPropagation()"'+dis+'>'+esc(s.context)+'</textarea>';
+        h+='<div class="fr">';
+        h+='<input type="text" style="flex:1" placeholder="Medium (e.g. oil, digital)" value="'+esc(s.medium)+'" oninput="upd('+s.id+',\\'medium\\',this.value)" onclick="event.stopPropagation()"'+dis+'>';
+        h+='<input type="text" style="flex:1" placeholder="Tags (comma-separated)" value="'+esc(s.tags)+'" oninput="upd('+s.id+',\\'tags\\',this.value)" onclick="event.stopPropagation()"'+dis+'>';
+        h+='</div>';
         h+='</div>';
         h+='<div class="dims">';
         dims.forEach(function(d){
@@ -287,16 +289,18 @@ export async function GET(request: NextRequest) {
           h+='<span class="dim-name">'+d+'</span>';
           h+='<div class="dim-score-wrap">';
           h+='<input class="score-num" type="number" min="0" max="5" step="1" value="'+dr.score+'" oninput="updDS('+s.id+',\\''+d+'\\',this.value)" onclick="event.stopPropagation()"'+dis+'>';
-          h+='<input class="reason-in" type="text" placeholder="Reason\u2026" value="'+esc(dr.reason)+'" oninput="updDR('+s.id+',\\''+d+'\\',this.value)" onclick="event.stopPropagation()"'+dis+'>';
+          h+='<textarea class="reason-in" placeholder="Reason\u2026" oninput="updDR('+s.id+',\\''+d+'\\',this.value)" onclick="event.stopPropagation()"'+dis+' style="height:32px;resize:vertical">'+esc(dr.reason)+'</textarea>';
           h+='</div></div>';
           if(open){
             h+='<div class="traits-wrap">';
             dimTraits[d].forEach(function(t){
               var tr=dr.traits[t]||{score:0,reason:''};
+              var applies=tr.score>=1;
               h+='<div class="trait-row">';
               h+='<span class="trait-name">'+esc(t)+'</span>';
-              h+='<input class="score-num" type="number" min="0" max="5" step="1" value="'+tr.score+'" oninput="updTS('+s.id+',\\''+d+'\\',\\''+esc(t)+'\\',this.value)" onclick="event.stopPropagation()"'+dis+'>';
-              h+='<input class="reason-in" type="text" placeholder="Reason\u2026" value="'+esc(tr.reason)+'" oninput="updTR('+s.id+',\\''+d+'\\',\\''+esc(t)+'\\',this.value)" onclick="event.stopPropagation()"'+dis+'>';
+              h+='<button style="width:28px;height:16px;border-radius:8px;border:none;background:'+(applies?'#18181b':'#d4d4d8')+';position:relative;cursor:pointer;flex-shrink:0" onclick="updTS('+s.id+',\\''+d+'\\',\\''+esc(t)+'\\','+(applies?'0':'1')+');event.stopPropagation()"'+dis+'><span style="position:absolute;top:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .15s;left:'+(applies?'14px':'2px')+'"></span></button>';
+              h+='<span style="font-size:9px;color:'+(applies?'#18181b':'#a1a1aa')+';width:12px">'+(applies?'\u2713':'\u2013')+'</span>';
+              h+='<textarea class="reason-in" placeholder="Reason\u2026" oninput="updTR('+s.id+',\\''+d+'\\',\\''+esc(t)+'\\',this.value)" onclick="event.stopPropagation()"'+dis+' style="height:24px;resize:vertical;font-size:9px">'+esc(tr.reason)+'</textarea>';
               h+='</div>';
             });
             h+='</div>';
@@ -311,7 +315,7 @@ export async function GET(request: NextRequest) {
     }
     h+='</div></div>';
     h+='<div class="ft">';
-    h+='<div class="ft-left"><button onclick="refreshGallery()">\u21bb Refresh</button><span>'+state.length+' found &middot; '+saved+' saved</span></div>';
+    h+='<div class="ft-left"><button onclick="refreshGallery()">\u21bb Refresh</button><span>'+(state.length-saved)+' found &middot; '+saved+' saved</span></div>';
     if(saved)h+='<a href="'+libUrl+'" target="_blank">Open Library \u2192</a>';
     h+='</div></body></html>';
     doc.open();doc.write(h);doc.close();
@@ -346,9 +350,10 @@ export async function GET(request: NextRequest) {
       scheduleAutoSave(id);
     };
     win.updTS=function(id,dim,trait,v){
-      var s=Math.max(0,Math.min(5,Number(v)||0));
+      var s=Number(v)>=1?1:0;
       state.forEach(function(item){if(item.id===id)item.ratings[dim].traits[trait].score=s;});
       scheduleAutoSave(id);
+      render();
     };
     win.updTR=function(id,dim,trait,v){
       state.forEach(function(item){if(item.id===id)item.ratings[dim].traits[trait].reason=v;});
@@ -374,7 +379,7 @@ export async function GET(request: NextRequest) {
             dimTraits[d].forEach(function(t){traits[t]={score:0,reason:''};});
             ratings[d]={score:0,reason:'',traits:traits};
           });
-          state.push({id:startId+i,src:im.src,sel:false,title:m.title,creator:m.artist,year:m.year,context:'',status:'idle',err:'',ratings:ratings,artworkId:null});
+          state.push({id:startId+i,src:im.src,sel:false,title:m.title,creator:m.artist,year:m.year,context:'',medium:'',tags:'',status:'idle',err:'',ratings:ratings,artworkId:null});
         });
         render();
       }
@@ -390,7 +395,7 @@ export async function GET(request: NextRequest) {
         fetch(saveUrl,{
           method:'POST',credentials:'include',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+rcTok},
-          body:JSON.stringify({image_url:item.src,source_url:pageUrl,title:item.title||undefined,artist:item.creator||undefined,year:item.year||undefined,context:item.context||undefined,ratings:item.ratings,library_id:selectedLibraryId||undefined})
+          body:JSON.stringify({image_url:item.src,source_url:pageUrl,title:item.title||undefined,artist:item.creator||undefined,year:item.year||undefined,context:item.context||undefined,medium:item.medium||undefined,tags:item.tags?item.tags.split(',').map(function(t){return t.trim();}).filter(Boolean):undefined,ratings:item.ratings,library_id:selectedLibraryId||undefined})
         }).then(function(r){return r.json();}).then(function(d){
           if(d.artworkId){item.status='saved';item.artworkId=d.artworkId;}
           else{item.status='error';item.err=d.error||'Unknown error';}
@@ -402,6 +407,11 @@ export async function GET(request: NextRequest) {
   }
 
   render();
+
+  win.addEventListener('beforeunload',function(e){
+    var hasUnsaved=state.some(function(s){return s.sel&&s.status!=='saved';});
+    if(hasUnsaved){e.preventDefault();e.returnValue='';}
+  });
 })();`
 
   return new NextResponse(script, {

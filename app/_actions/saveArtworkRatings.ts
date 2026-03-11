@@ -13,15 +13,23 @@ export async function saveArtworkRatings(
   artworkId: string,
   ratings: Record<string, { score: number; reason: string }>
 ): Promise<SaveRatingsResult> {
+  const isDimension = (key: string) =>
+    ['Sincerity', 'Excitement', 'Competence', 'Sophistication', 'Ruggedness'].includes(key)
+
   const rows = Object.entries(ratings)
     .filter(([, rating]) => rating !== undefined && rating.score !== 0)
-    .map(([trait, rating]) => ({
-      user_id: Number(userId),
-      artwork_id: artworkId,
-      trait,
-      score: (rating as { score: number; reason: string }).score,
-      reason: (rating as { score: number; reason: string }).reason ?? '',
-    }))
+    .map(([trait, rating]) => {
+      const rawScore = (rating as { score: number; reason: string }).score
+      // Dimensions keep 0-5 scale; traits are binary (0 or 1)
+      const score = isDimension(trait) ? rawScore : (rawScore >= 0.5 ? 1 : 0)
+      return {
+        user_id: Number(userId),
+        artwork_id: artworkId,
+        trait,
+        score,
+        reason: (rating as { score: number; reason: string }).reason ?? '',
+      }
+    })
 
   if (rows.length === 0) {
     return { success: true }

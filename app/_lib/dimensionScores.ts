@@ -12,8 +12,9 @@ export function computeDimensionScores(
     DIMENSIONS.map(dimension => {
       const traits = Object.values(BRAND_PERSONALITY[dimension]).flat() as Trait[]
       const scores = traits.map(t => scoreMap[t] ?? 0)
-      const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-      return [dimension, Math.round(avg * 10) / 10]
+      const appliesCount = scores.filter(s => s >= 0.5).length
+      const scaled = (appliesCount / traits.length) * 5
+      return [dimension, Math.round(scaled * 10) / 10]
     })
   ) as DimensionScores
 }

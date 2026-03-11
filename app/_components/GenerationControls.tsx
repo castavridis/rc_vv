@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { BRAND_PERSONALITY, DIMENSIONS, type Trait } from '../_lib/brand'
 import { type DimensionScores } from '../_lib/dimensionScores'
 import { generateSummary } from '../_actions/generateSummary'
@@ -8,6 +8,7 @@ import { generateHexColor } from '../_actions/generateHexColor'
 import { generateImage } from '../_actions/generateImage'
 import { generateSVG } from '../_actions/generateSVG'
 import { generateAnimation } from '../_actions/generateAnimation'
+import { generatePolinePalette, getAnchorColorsFromProfile } from '../_lib/polinePalette'
 
 type Task = 'summary' | 'hex_color' | 'image' | 'svg' | 'animation'
 
@@ -16,6 +17,7 @@ interface GenerationControlsProps {
   dimensionWeights: DimensionScores
   brandSummary?: string
   onAssetGenerated?: () => void
+  traitScores?: { trait: string; score: number }[]
 }
 
 const TRAIT_TASKS: Task[] = ['image', 'svg', 'animation']
@@ -34,12 +36,22 @@ export default function GenerationControls({
   dimensionWeights,
   brandSummary,
   onAssetGenerated,
+  traitScores,
 }: GenerationControlsProps) {
   const [selectedTask, setSelectedTask] = useState<Task>('image')
   const [selectedTrait, setSelectedTrait] = useState<Trait | null>(null)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [lastStatus, setLastStatus] = useState<string | null>(null)
+  const [palette, setPalette] = useState<string[]>([])
+
+  // Compute Poline palette from trait scores
+  useEffect(() => {
+    if (traitScores && traitScores.length > 0) {
+      const anchors = getAnchorColorsFromProfile(traitScores)
+      generatePolinePalette(anchors, 8).then(setPalette)
+    }
+  }, [traitScores])
 
   const needsTrait = TRAIT_TASKS.includes(selectedTask)
 
@@ -56,9 +68,9 @@ export default function GenerationControls({
       } else if (selectedTask === 'hex_color') {
         result = await generateHexColor(sessionId, dimensionWeights, brandSummary ?? '')
       } else if (selectedTask === 'image') {
-        result = await generateImage(sessionId, selectedTrait!, dimensionWeights, brandSummary)
+        result = await generateImage(sessionId, selectedTrait!, dimensionWeights, brandSummary, palette.length > 0 ? palette : undefined)
       } else if (selectedTask === 'svg') {
-        result = await generateSVG(sessionId, selectedTrait!, dimensionWeights, brandSummary)
+        result = await generateSVG(sessionId, selectedTrait!, dimensionWeights, brandSummary, palette.length > 0 ? palette : undefined)
       } else {
         result = await generateAnimation(sessionId, selectedTrait!, dimensionWeights, brandSummary)
       }
@@ -113,6 +125,18 @@ export default function GenerationControls({
               </optgroup>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* Palette preview */}
+      {palette.length > 0 && (selectedTask === 'image' || selectedTask === 'svg') && (
+        <div>
+          <p className="text-[10px] font-mono text-zinc-400 mb-1">Palette will be passed to generation</p>
+          <div className="flex gap-1">
+            {palette.slice(0, 6).map((hex, i) => (
+              <div key={i} className="w-4 h-4 rounded" style={{ backgroundColor: hex }} title={hex} />
+            ))}
+          </div>
         </div>
       )}
 

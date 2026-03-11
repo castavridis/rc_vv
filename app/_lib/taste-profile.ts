@@ -2,22 +2,23 @@ import { TRAITS, type Trait } from './brand'
 
 export type TraitScoreMap = Partial<Record<Trait, number>>
 
-/** Aggregate raw rating rows into avg score per trait */
+/** Aggregate raw rating rows into fraction (0-1) per trait across artworks.
+ *  For binary traits: fraction = (count of "applies") / (total artworks rated on that trait) */
 export function aggregateRatings(
   rows: { trait: string; score: number }[]
 ): TraitScoreMap {
-  const sums: Record<string, number> = {}
-  const counts: Record<string, number> = {}
+  const appliesCount: Record<string, number> = {}
+  const totalCount: Record<string, number> = {}
 
   for (const row of rows) {
-    sums[row.trait] = (sums[row.trait] ?? 0) + row.score
-    counts[row.trait] = (counts[row.trait] ?? 0) + 1
+    appliesCount[row.trait] = (appliesCount[row.trait] ?? 0) + (row.score >= 0.5 ? 1 : 0)
+    totalCount[row.trait] = (totalCount[row.trait] ?? 0) + 1
   }
 
   const result: TraitScoreMap = {}
   for (const trait of TRAITS) {
-    if (counts[trait]) {
-      result[trait] = sums[trait] / counts[trait]
+    if (totalCount[trait]) {
+      result[trait] = appliesCount[trait] / totalCount[trait]
     }
   }
   return result

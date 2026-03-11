@@ -85,20 +85,16 @@ function buildArtworkContext(
 
 const SYSTEM_PROMPT = `You are an expert in visual aesthetics and brand personality analysis using Jennifer Aaker's Brand Personality Framework.
 
-Your task is to assess a given input (text description or image) against 42 brand personality traits and assign a score from 0 to 5 for each trait.
+Your task is to assess a given input (text description or image) against 42 brand personality traits. For each trait, decide whether it applies (1) or does not apply (0).
 
 Score scale:
-- 0: Not at all representative
-- 1: Barely representative
-- 2: Somewhat representative
-- 3: Moderately representative
-- 4: Strongly representative
-- 5: Maximally representative
+- 0: Does not apply
+- 1: Applies
 
 Trait definitions (organized by dimension → facet → trait):
 ${buildTraitDefinitions()}
 
-Return ONLY a valid JSON object with all 42 trait names as keys and integer scores (0–5) as values. No markdown, no explanation, just the JSON object.`
+Return ONLY a valid JSON object with all 42 trait names as keys and binary scores (0 or 1) as values. No markdown, no explanation, just the JSON object.`
 
 export function buildTextPrompt(
   text: string,

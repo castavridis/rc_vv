@@ -18,13 +18,17 @@ export async function generateSVG(
   sessionId: string,
   trait: Trait,
   dimensionWeights: DimensionScores,
-  brandSummary?: string
+  brandSummary?: string,
+  palette?: string[]
 ): Promise<GenerateSVGResult> {
   let assetId: string | undefined
 
   try {
     const level = levelForTrait(trait, dimensionWeights)
     const summaryContext = brandSummary ? `Brand context: ${brandSummary}\n\n` : ''
+    const paletteContext = palette && palette.length > 0
+      ? `\n\nUse these brand colors in the SVG: ${palette.join(', ')}. Set them as CSS custom properties: ${palette.map((hex, i) => `--color-${i + 1}: ${hex}`).join('; ')}.`
+      : ''
 
     assetId = await createAssetRecord(sessionId, 'svg', trait, dimensionWeights)
 
@@ -39,7 +43,7 @@ export async function generateSVG(
         messages: [
           {
             role: 'system',
-            content: `You are a generative SVG designer. Create a single self-contained SVG (300×300) using only geometric shapes (circles, squares, triangles, lines). The SVG must use CSS custom properties (--color-primary, --color-secondary, --scale, --opacity) for its key visual attributes so the user can adjust them interactively. Return ONLY the raw SVG markup, no explanation, no markdown fences.`,
+            content: `You are a generative SVG designer. Create a single self-contained SVG (300×300) using only geometric shapes (circles, squares, triangles, lines). The SVG must use CSS custom properties (--color-primary, --color-secondary, --scale, --opacity) for its key visual attributes so the user can adjust them interactively. Return ONLY the raw SVG markup, no explanation, no markdown fences.${paletteContext}`,
           },
           {
             role: 'user',

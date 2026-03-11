@@ -18,13 +18,18 @@ export async function generateImage(
   sessionId: string,
   trait: Trait,
   dimensionWeights: DimensionScores,
-  brandSummary?: string
+  brandSummary?: string,
+  palette?: string[]
 ): Promise<GenerateImageResult> {
   let assetId: string | undefined
 
   try {
     const level = levelForTrait(trait, dimensionWeights)
-    const prompt = contentForTraitAndLevel(trait, level, brandSummary)
+    let prompt = contentForTraitAndLevel(trait, level, brandSummary)
+
+    if (palette && palette.length > 0) {
+      prompt += `\n\nUse these brand colors prominently: ${palette.join(', ')}.`
+    }
 
     assetId = await createAssetRecord(sessionId, 'image', trait, dimensionWeights)
 

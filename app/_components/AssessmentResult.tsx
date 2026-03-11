@@ -46,19 +46,18 @@ export default function AssessmentResult({ traits, contextArtworks }: Assessment
               <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-3">
                 {dimension}
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {traits.map(trait => {
                   const score = scoreMap[trait] ?? 0
+                  const applies = score >= 0.5
                   return (
                     <div key={trait} className="flex items-center gap-3">
-                      <span className="text-xs font-mono w-32 shrink-0 text-zinc-600">{trait}</span>
-                      <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-zinc-800 rounded-full transition-all"
-                          style={{ width: `${(score / 5) * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-mono text-zinc-400 w-4 text-right">{score}</span>
+                      <span className={`text-xs font-mono w-32 shrink-0 ${applies ? 'text-zinc-800 font-semibold' : 'text-zinc-400'}`}>
+                        {trait}
+                      </span>
+                      <span className={`text-xs font-mono ${applies ? 'text-zinc-800' : 'text-zinc-300'}`}>
+                        {applies ? '●' : '○'}
+                      </span>
                     </div>
                   )
                 })}

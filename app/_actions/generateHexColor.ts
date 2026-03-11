@@ -20,6 +20,16 @@ export async function generateHexColor(
   let assetId: string | undefined
 
   try {
+    if (!brandSummary || brandSummary.trim().length === 0) {
+      return { success: false, error: 'Brand summary is required — generate a summary first.' }
+    }
+
+    // Filter out null/zero dimension weights for clearer context
+    const activeWeights = Object.entries(dimensionWeights)
+      .filter(([, v]) => v > 0)
+      .map(([k, v]) => `${k}: ${v}/5`)
+      .join(', ')
+
     assetId = await createAssetRecord(sessionId, 'hex_color', null, dimensionWeights)
 
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -37,7 +47,7 @@ export async function generateHexColor(
           },
           {
             role: 'user',
-            content: `Brand summary: ${brandSummary}`,
+            content: `Brand summary: ${brandSummary}\n\nDimension weights: ${activeWeights || 'none set'}`,
           },
         ],
       }),
@@ -54,8 +64,28 @@ export async function generateHexColor(
 
     // Strip markdown fences if present
     const jsonStr = raw.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim()
-    const colors: string[] = JSON.parse(jsonStr)
-    if (!Array.isArray(colors)) throw new Error('Response is not an array')
+
+    let colors: string[]
+    try {
+      colors = JSON.parse(jsonStr)
+    } catch {
+      // Try to extract hex codes directly from the response
+      const hexMatches = raw.match(/#[0-9A-Fa-f]{6}/g)
+      if (hexMatches && hexMatches.length > 0) {
+        colors = hexMatches.slice(0, 3)
+      } else {
+        throw new Error(`Could not parse colors from response: ${raw.slice(0, 100)}`)
+      }
+    }
+
+    if (!Array.isArray(colors) || colors.length === 0) throw new Error('Response is not a valid color array')
+
+    // Validate hex format
+    colors = colors
+      .map(c => typeof c === 'string' ? c.trim() : '')
+      .filter(c => /^#[0-9A-Fa-f]{6}$/.test(c))
+
+    if (colors.length === 0) throw new Error('No valid hex colors in response')
 
     await saveTextAsset(assetId, sessionId, JSON.stringify(colors))
     return { success: true, assetId, colors }

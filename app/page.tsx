@@ -33,12 +33,20 @@ export default async function HomePage() {
           <h1 className="text-2xl font-bold font-mono">vv.</h1>
           <p className="text-sm text-zinc-500 font-mono">Hi, {user.name.split(' ')[0]}.</p>
         </div>
-        <Link
-          href="/session/new"
-          className="px-4 py-2 bg-zinc-800 text-white text-sm font-mono rounded hover:bg-zinc-700"
-        >
-          + New Session
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/libraries"
+            className="px-4 py-2 text-sm font-mono text-zinc-600 border border-zinc-200 rounded hover:border-zinc-400"
+          >
+            Libraries
+          </Link>
+          <Link
+            href="/session/new"
+            className="px-4 py-2 bg-zinc-800 text-white text-sm font-mono rounded hover:bg-zinc-700"
+          >
+            + New Session
+          </Link>
+        </div>
       </div>
 
       {!sessions || sessions.length === 0 ? (

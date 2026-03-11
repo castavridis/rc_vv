@@ -29,15 +29,17 @@ export default async function LibraryPage({ searchParams }: Props) {
     artworksQuery = artworksQuery.eq('library_id', lib)
   }
 
-  const [{ data: artworks }, ratedIds, allRatings, libraryName] = await Promise.all([
+  const [{ data: artworks }, ratedIds, allRatings, libraryName, { data: libraries }] = await Promise.all([
     artworksQuery,
     getRatedArtworkIds(user.id),
     getAllUserRatings(user.id),
     lib ? supabase.from('libraries').select('name').eq('id', lib).single().then(r => r.data?.name ?? null) : Promise.resolve(null),
+    supabase.from('libraries').select('id, name').eq('user_id', user.id).order('name'),
   ])
 
   const profile = aggregateRatings(allRatings)
   const totalRated = ratedIds.size
+  const libraryList = (libraries ?? []).map(l => ({ id: l.id, name: l.name }))
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
@@ -79,6 +81,9 @@ export default async function LibraryPage({ searchParams }: Props) {
                   medium={artwork.medium}
                   tags={artwork.tags ?? []}
                   rated={ratedIds.has(artwork.id)}
+                  userId={user.id}
+                  libraries={libraryList}
+                  currentLibraryId={artwork.library_id}
                 />
               ))}
             </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getSessionAssets, type AssetRow } from '../_actions/getSessionAssets'
 
 type AssetTask = 'summary' | 'hex_color' | 'image' | 'svg' | 'animation'
@@ -128,14 +128,81 @@ function AssetTile({ asset, onAddToCanvas }: { asset: Asset; onAddToCanvas?: (ur
   }
 
   if (asset.task === 'animation' && asset.content) {
-    return (
-      <div className="p-2 bg-zinc-50 rounded">
-        <pre className="text-[10px] font-mono text-zinc-500 overflow-x-auto whitespace-pre-wrap">
-          {asset.content.slice(0, 200)}{asset.content.length > 200 ? '…' : ''}
-        </pre>
-      </div>
-    )
+    return <AnimationPreview content={asset.content} />
   }
 
   return null
+}
+
+function AnimationPreview({ content }: { content: string }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [showCode, setShowCode] = useState(false)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    // Extract SVG content from the animation code
+    const svgMatch = content.match(/<svg[\s\S]*?<\/svg>/i)
+    if (!svgMatch) return
+
+    const container = containerRef.current
+    container.innerHTML = svgMatch[0]
+
+    // Extract and execute any GSAP script
+    const scriptMatch = content.match(/<script[\s\S]*?>([\s\S]*?)<\/script>/i)
+    if (scriptMatch?.[1]) {
+      try {
+        // Load GSAP if not already loaded, then execute
+        const gsapScript = document.createElement('script')
+        gsapScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js'
+        gsapScript.onload = () => {
+          try {
+            const fn = new Function(scriptMatch[1])
+            fn()
+          } catch (e) {
+            console.warn('[AnimationPreview] script error:', e)
+          }
+        }
+        // Only add if GSAP isn't already loaded
+        if (typeof (window as unknown as Record<string, unknown>).gsap === 'undefined') {
+          document.head.appendChild(gsapScript)
+        } else {
+          try {
+            const fn = new Function(scriptMatch[1])
+            fn()
+          } catch (e) {
+            console.warn('[AnimationPreview] script error:', e)
+          }
+        }
+      } catch (e) {
+        console.warn('[AnimationPreview] failed to execute animation:', e)
+      }
+    }
+
+    return () => {
+      container.innerHTML = ''
+    }
+  }, [content])
+
+  return (
+    <div className="rounded bg-zinc-50 overflow-hidden">
+      <div
+        ref={containerRef}
+        className="w-full aspect-square p-2"
+      />
+      <div className="px-2 pb-2">
+        <button
+          onClick={() => setShowCode(!showCode)}
+          className="text-[10px] font-mono text-zinc-400 hover:text-zinc-600"
+        >
+          {showCode ? 'Hide code' : 'Show code'}
+        </button>
+        {showCode && (
+          <pre className="text-[10px] font-mono text-zinc-500 overflow-x-auto whitespace-pre-wrap mt-1">
+            {content}
+          </pre>
+        )}
+      </div>
+    </div>
+  )
 }

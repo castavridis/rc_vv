@@ -32,7 +32,7 @@ export function parseModelResponse(content: string): TraitScores | null {
       TRAITS.map(trait => {
         const val = parsed[trait]
         const score = typeof val === 'number'
-          ? Math.max(0, Math.min(5, Math.round(val)))
+          ? (val >= 0.5 ? 1 : 0)
           : 0
         return [trait, score]
       })
