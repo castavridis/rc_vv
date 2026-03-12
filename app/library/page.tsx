@@ -113,15 +113,15 @@ export default async function LibraryPage({ searchParams }: Props) {
                 overlays={radarOverlays}
               />
               {radarOverlays.length > 0 && (
-                <div className="mt-2 space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-0.5 bg-zinc-800 inline-block" />
-                    <span className="text-[10px] font-mono text-zinc-500">You</span>
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-800 inline-block shrink-0" />
+                    <span className="text-[10px] font-mono text-zinc-600">You</span>
                   </div>
                   {radarOverlays.map((o, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
-                      <span className="w-3 h-0.5 inline-block" style={{ background: o.strokeColor, opacity: 0.8 }} />
-                      <span className="text-[10px] font-mono text-zinc-500">{o.label}</span>
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ background: o.strokeColor }} />
+                      <span className="text-[10px] font-mono text-zinc-600">{o.label}</span>
                     </div>
                   ))}
                 </div>
