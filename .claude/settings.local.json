@@ -6,7 +6,13 @@
       "Bash(pnpm install:*)",
       "Bash(npx tsc:*)",
       "Bash(git add:*)",
-      "Bash(grep -r \"brands\" /workspace/supabase/migrations --include=\"*.sql\" 2>/dev/null | head -20)"
+      "Bash(grep -r \"brands\" /workspace/supabase/migrations --include=\"*.sql\" 2>/dev/null | head -20)",
+      "Bash(grep -r \"facet\" /workspace/app --include=\"*.ts\" --include=\"*.tsx\" -l 2>/dev/null | head -20)",
+      "Bash(grep -r \"Facet\" /workspace/app --include=\"*.ts\" --include=\"*.tsx\" -l 2>/dev/null | head -20)",
+      "Bash(grep -n \"facet\" /workspace/app/_components/ColorPalettePicker/*.tsx | head -30)",
+      "Bash(npx eslint:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm exec:*)"
     ]
   }
 }

@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import { getUser } from '../../_lib/auth/session'
 import supabase from '../../_actions/supabase'
 import { getArtworkRatings } from '../../_actions/saveArtworkRatings'
-import TraitRatingForm from '../../_components/TraitRatingForm'
+import ArtworkRatingSection from '../../_components/ArtworkRatingSection'
 import ArtworkMetadata from '../../_components/ArtworkMetadata'
 import Link from 'next/link'
 
@@ -63,7 +63,7 @@ export default async function ArtworkPage({ params }: Props) {
             <p className="text-xs text-zinc-400 mb-4">
               Score each dimension 0–5. Expand to fine-tune individual traits.
             </p>
-            <TraitRatingForm
+            <ArtworkRatingSection
               userId={user.id}
               artworkId={artwork.id}
               initialRatings={existingRatings}

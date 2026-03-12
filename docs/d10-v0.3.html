@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D10 — v0.3</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#111;color:#aaa;font-family:'DM Mono',monospace;font-size:12px;height:100vh;display:flex;overflow:hidden}
+  canvas{display:block;cursor:grab;flex:1;min-width:0}
+  canvas:active{cursor:grabbing}
+  #panel{width:250px;padding:18px 16px;background:#161616;border-left:1px solid #222;overflow-y:auto;overflow-x:hidden;flex-shrink:0;display:flex;flex-direction:column;gap:14px}
+  .group{display:flex;flex-direction:column;gap:6px}
+  .group-title{color:#666;text-transform:uppercase;letter-spacing:0.12em;font-size:10px;margin-bottom:2px}
+  label{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0}
+  label span{white-space:nowrap;flex-shrink:0}
+  label span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  label .val{color:#555;min-width:32px;text-align:right;flex-shrink:0;font-size:11px}
+  input[type=range]{flex:1;min-width:0;-webkit-appearance:none;appearance:none;height:3px;background:#333;border-radius:2px;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#888;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb:hover{background:#bbb}
+  input[type=color]{width:28px;height:20px;border:1px solid #333;background:transparent;cursor:pointer;padding:0;border-radius:3px}
+  .color-row{display:flex;align-items:center;justify-content:space-between}
+  button{font-family:inherit;font-size:11px;padding:6px 12px;background:#222;color:#888;border:1px solid #333;border-radius:4px;cursor:pointer;letter-spacing:0.05em}
+  button:hover{background:#2a2a2a;color:#bbb;border-color:#444}
+  .btn-row{display:flex;gap:6px}
+  .btn-row button{flex:1}
+  textarea.settings-box{font-family:inherit;font-size:10px;width:100%;height:60px;background:#111;color:#777;border:1px solid #333;border-radius:4px;padding:6px;resize:vertical;display:none}
+  textarea.settings-box.show{display:block}
+  select{font-family:inherit;font-size:11px;background:#222;color:#888;border:1px solid #333;border-radius:4px;padding:3px 6px;cursor:pointer;flex:1;min-width:0}
+  select:hover{background:#2a2a2a;color:#bbb;border-color:#444}
+  .tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#282828;color:#555;font-size:9px;cursor:help;flex-shrink:0;margin-left:2px;line-height:1}
+  .tip:hover{background:#383838;color:#999}
+  .tip .tt{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#222;color:#aaa;border:1px solid #333;border-radius:4px;padding:6px 8px;font-size:10px;line-height:1.35;white-space:normal;width:180px;z-index:100;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+  .tip:hover .tt{display:block}
+  .tip .tt::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#333}
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+
+<div id="panel">
+  <div class="group">
+    <div class="group-title">Outer Shell (Iridescence) <span class="tip">?<span class="tt">Transparent shell around the die carrying the rainbow iridescence effect</span></span></div>
+    <label><span>Opacity</span><span class="tip">?<span class="tt">Overall transparency of the outer shell. 0 = invisible, 1 = fully opaque</span></span><input type="range" id="shellAlpha" min="0" max="1" step="0.01" value="0.09"><span class="val" id="shellAlphaV">0.09</span></label>
+    <label><span>Iri Strength</span><span class="tip">?<span class="tt">Intensity of the rainbow color effect. Higher = more vivid iridescence</span></span><input type="range" id="iriStr" min="0" max="2" step="0.01" value="1.62"><span class="val" id="iriStrV">1.62</span></label>
+    <label><span>Iri Shift</span><span class="tip">?<span class="tt">Phase offset of the color cycle. Rotates which color appears where on the surface</span></span><input type="range" id="iriShift" min="0" max="6.28" step="0.01" value="2.73"><span class="val" id="iriShiftV">2.73</span></label>
+    <label><span>Iri Frequency</span><span class="tip">?<span class="tt">How many color bands appear across the surface. Higher = tighter rainbow stripes</span></span><input type="range" id="iriFreq" min="0.5" max="5" step="0.1" value="3.4"><span class="val" id="iriFreqV">3.4</span></label>
+    <label><span>Fresnel Pow</span><span class="tip">?<span class="tt">Controls edge glow falloff. Low = color everywhere, high = color only at glancing angles</span></span><input type="range" id="shellFPow" min="0.5" max="8" step="0.1" value="8"><span class="val" id="shellFPowV">8.0</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">Iri Light Source <span class="tip">?<span class="tt">Position of the virtual light that drives the iridescence pattern. Moving it shifts the rainbow across the surface</span></span></div>
+    <label><span>X</span><input type="range" id="iriLX" min="-6" max="6" step="0.1" value="2.5"><span class="val" id="iriLXV">2.5</span></label>
+    <label><span>Y</span><input type="range" id="iriLY" min="-6" max="6" step="0.1" value="3"><span class="val" id="iriLYV">3.0</span></label>
+    <label><span>Z</span><input type="range" id="iriLZ" min="-6" max="6" step="0.1" value="2"><span class="val" id="iriLZV">2.0</span></label>
+    <label><span>View Mix</span><span class="tip">?<span class="tt">0 = iridescence driven by light angle only. 1 = driven by viewing angle only. Mix blends both</span></span><input type="range" id="iriViewMix" min="0" max="1" step="0.01" value="0.5"><span class="val" id="iriViewMixV">0.5</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">Inner Die (Material) <span class="tip">?<span class="tt">The core faceted shape inside the shell. Switch between opaque solid or transparent prismatic glass</span></span></div>
+    <label><span>Mode</span><span class="tip">?<span class="tt">Solid: opaque PBR material with diffuse, specular, sheen. Prismatic: transparent glass with chromatic refraction of the shell's iridescence</span></span><select id="innerMode"><option value="solid">Solid</option><option value="prismatic" selected>Prismatic</option></select></label>
+    <div class="color-row"><span>Color</span><span class="tip">?<span class="tt">Base color. In solid mode: surface color. In prismatic mode: tints the refracted light</span></span><input type="color" id="baseCol" value="#eee5ff"></div>
+    <label><span>Scale</span><span class="tip">?<span class="tt">Shrinks the inner die relative to the outer shell. Lower = more gap between layers</span></span><input type="range" id="innerScale" min="0.7" max="1" step="0.005" value="0.985"><span class="val" id="innerScaleV">0.985</span></label>
+    <label><span>Pole Height</span><span class="tip">?<span class="tt">Distance from center to the top/bottom apex. Changes how pointy or squat the die is. Default preserves planar kite faces</span></span><input type="range" id="poleH" min="0.5" max="3.0" step="0.01" value="0.65"><span class="val" id="poleHV">0.65</span></label>
+    <label><span>Opacity</span><span class="tip">?<span class="tt">Overall alpha of the inner die. In prismatic mode, edges stay more opaque via fresnel</span></span><input type="range" id="innerAlpha" min="0.05" max="1" step="0.01" value="1"><span class="val" id="innerAlphaV">1.0</span></label>
+    <label><span>Dispersion</span><span class="tip">?<span class="tt">Chromatic aberration in prismatic mode. Each color channel refracts at a different angle, splitting white light into rainbows. 0 = no split</span></span><input type="range" id="dispersion" min="0" max="0.15" step="0.001" value="0.04"><span class="val" id="dispersionV">0.04</span></label>
+    <label><span>Metallic</span><span class="tip">?<span class="tt">Solid mode. 0 = plastic/stone (white specular). 1 = metal (colored specular, reduced diffuse)</span></span><input type="range" id="metallic" min="0" max="1" step="0.01" value="0.85"><span class="val" id="metallicV">0.85</span></label>
+    <label><span>Roughness</span><span class="tip">?<span class="tt">Surface micro-roughness. Low = mirror-sharp reflections. High = broad, soft highlights</span></span><input type="range" id="roughness" min="0.02" max="1" step="0.01" value="0.25"><span class="val" id="roughnessV">0.25</span></label>
+    <label><span>Specular</span><span class="tip">?<span class="tt">Intensity multiplier for specular highlights from all light sources</span></span><input type="range" id="specInt" min="0" max="3" step="0.01" value="0.8"><span class="val" id="specIntV">0.8</span></label>
+    <label><span>Ambient</span><span class="tip">?<span class="tt">Minimum light level on all faces, even those facing away from lights. Prevents pure black shadows</span></span><input type="range" id="ambient" min="0" max="0.5" step="0.01" value="0.15"><span class="val" id="ambientV">0.15</span></label>
+    <label><span>Env Reflect</span><span class="tip">?<span class="tt">Strength of environment map reflections. Simulates a simple 6-color sky reflected in the surface</span></span><input type="range" id="envRef" min="0" max="2" step="0.01" value="0.35"><span class="val" id="envRefV">0.35</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">Sheen <span class="tip">?<span class="tt">Velvet-like highlight at grazing angles. Adds soft glow around the silhouette. Solid mode only</span></span></div>
+    <div class="color-row"><span>Color</span><input type="color" id="sheenCol" value="#ccbbff"></div>
+    <label><span>Intensity</span><input type="range" id="sheenInt" min="0" max="3" step="0.01" value="0.6"><span class="val" id="sheenIntV">0.6</span></label>
+    <label><span>Roughness</span><span class="tip">?<span class="tt">Width of the sheen highlight. Low = sharp silhouette glow. High = broad soft sheen</span></span><input type="range" id="sheenRough" min="0.05" max="1" step="0.01" value="0.38"><span class="val" id="sheenRoughV">0.38</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">Radar Gem <span class="tip">?<span class="tt">A 5-axis data crystal inside the die. Each stat pushes a vertex outward, mirrored top and bottom to form a gem shape</span></span></div>
+    <label style="cursor:pointer"><input type="checkbox" id="radarEnabled" style="cursor:pointer" checked> Enabled</label>
+    <div class="color-row"><span>Color</span><span class="tip">?<span class="tt">Base color of the radar gem surface</span></span><input type="color" id="radarCol" value="#4c00ff"></div>
+    <label><span>Sincerity</span><input type="range" id="rSincerity" min="1" max="5" step="1" value="4"><span class="val" id="rSincerityV">4</span></label>
+    <label><span>Excitement</span><input type="range" id="rExcitement" min="1" max="5" step="1" value="4"><span class="val" id="rExcitementV">4</span></label>
+    <label><span>Competence</span><input type="range" id="rCompetence" min="1" max="5" step="1" value="2"><span class="val" id="rCompetenceV">2</span></label>
+    <label><span>Ruggedness</span><input type="range" id="rRuggedness" min="1" max="5" step="1" value="5"><span class="val" id="rRuggednessV">5</span></label>
+    <label><span>Sophisttic.</span><input type="range" id="rSophist" min="1" max="5" step="1" value="3"><span class="val" id="rSophistV">3</span></label>
+    <label><span>Max Radius</span><span class="tip">?<span class="tt">How far a max-value (5) vertex extends. Fraction of inner die scale. 0.7 = 70% of die radius</span></span><input type="range" id="radarRadius" min="0.2" max="0.95" step="0.01" value="0.7"><span class="val" id="radarRadiusV">0.7</span></label>
+    <label><span>Pole Height</span><span class="tip">?<span class="tt">Fraction of the inner die's pole height. 0.5 = half as tall as the die. Can't clip since it's always proportional</span></span><input type="range" id="radarPoleH" min="0.05" max="1.0" step="0.01" value="0.3"><span class="val" id="radarPoleHV">0.3</span></label>
+    <label><span>Glow</span><span class="tip">?<span class="tt">Breathing emission — two overlapping slow pulses that brighten and dim the gem surface over time. Higher = more dramatic pulse</span></span><input type="range" id="radarGlow" min="0" max="2" step="0.01" value="0.21"><span class="val" id="radarGlowV">0.21</span></label>
+    <label><span>Fresnel Glow</span><span class="tip">?<span class="tt">Extra brightness at grazing angles, giving the gem a holographic edge-lit look</span></span><input type="range" id="radarFresnel" min="0" max="3" step="0.01" value="0"><span class="val" id="radarFresnelV">0.0</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">Key Light (L1) <span class="tip">?<span class="tt">Primary directional light. Strongest source, sets the main illumination direction</span></span></div>
+    <div class="color-row"><span>Color</span><input type="color" id="l1Col" value="#ae00ff"></div>
+    <label><span>Intensity</span><input type="range" id="l1Int" min="0" max="3" step="0.01" value="2.36"><span class="val" id="l1IntV">2.36</span></label>
+    <label><span>X</span><input type="range" id="l1X" min="-5" max="5" step="0.1" value="4.8"><span class="val" id="l1XV">4.8</span></label>
+    <label><span>Y</span><input type="range" id="l1Y" min="-5" max="5" step="0.1" value="-0.2"><span class="val" id="l1YV">-0.2</span></label>
+    <label><span>Z</span><input type="range" id="l1Z" min="-5" max="5" step="0.1" value="0.6"><span class="val" id="l1ZV">0.6</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">Fill Light (L2) <span class="tip">?<span class="tt">Secondary light from opposite side. Softens shadows cast by the key light</span></span></div>
+    <div class="color-row"><span>Color</span><input type="color" id="l2Col" value="#ff7b00"></div>
+    <label><span>Intensity</span><input type="range" id="l2Int" min="0" max="3" step="0.01" value="0.82"><span class="val" id="l2IntV">0.82</span></label>
+    <label><span>X</span><input type="range" id="l2X" min="-5" max="5" step="0.1" value="-4.1"><span class="val" id="l2XV">-4.1</span></label>
+    <label><span>Y</span><input type="range" id="l2Y" min="-5" max="5" step="0.1" value="1.8"><span class="val" id="l2YV">1.8</span></label>
+    <label><span>Z</span><input type="range" id="l2Z" min="-5" max="5" step="0.1" value="1.6"><span class="val" id="l2ZV">1.6</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">Rim Light (L3) <span class="tip">?<span class="tt">Subtle backlight that highlights edges and separates the die from the background</span></span></div>
+    <div class="color-row"><span>Color</span><input type="color" id="l3Col" value="#808099"></div>
+    <label><span>Intensity</span><input type="range" id="l3Int" min="0" max="3" step="0.01" value="0.3"><span class="val" id="l3IntV">0.3</span></label>
+    <label><span>X</span><input type="range" id="l3X" min="-5" max="5" step="0.1" value="0"><span class="val" id="l3XV">0.0</span></label>
+    <label><span>Y</span><input type="range" id="l3Y" min="-5" max="5" step="0.1" value="-2"><span class="val" id="l3YV">-2.0</span></label>
+    <label><span>Z</span><input type="range" id="l3Z" min="-5" max="5" step="0.1" value="3"><span class="val" id="l3ZV">3.0</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">Point Light <span class="tip">?<span class="tt">Positional light with distance falloff. Unlike directional lights, intensity drops with distance from the die</span></span></div>
+    <div class="color-row"><span>Color</span><input type="color" id="pointCol" value="#ffeedd"></div>
+    <label><span>Intensity</span><input type="range" id="pointInt" min="0" max="5" step="0.01" value="3.5"><span class="val" id="pointIntV">3.5</span></label>
+    <label><span>X</span><input type="range" id="pointX" min="-5" max="5" step="0.1" value="3"><span class="val" id="pointXV">3.0</span></label>
+    <label><span>Y</span><input type="range" id="pointY" min="-5" max="5" step="0.1" value="3"><span class="val" id="pointYV">3.0</span></label>
+    <label><span>Z</span><input type="range" id="pointZ" min="-5" max="5" step="0.1" value="4"><span class="val" id="pointZV">4.0</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">Edges <span class="tip">?<span class="tt">Wireframe overlay showing face boundaries on the inner die</span></span></div>
+    <div class="color-row"><span>Color</span><input type="color" id="edgeCol" value="#ffffff"></div>
+    <label><span>Opacity</span><input type="range" id="edgeAlpha" min="0" max="1" step="0.01" value="0"><span class="val" id="edgeAlphaV">0.0</span></label>
+  </div>
+  <div class="group">
+    <div class="group-title">View</div>
+    <label><span>Zoom</span><input type="range" id="zoom" min="2" max="15" step="0.1" value="8.5"><span class="val" id="zoomV">8.5</span></label>
+    <label><span>Auto Rotate</span><input type="range" id="autoSpd" min="0" max="3" step="0.01" value="1.68"><span class="val" id="autoSpdV">1.68</span></label>
+    <label><span>Bg Bright</span><span class="tip">?<span class="tt">Brightness of the procedural nebula background. Also affects what the prismatic die refracts</span></span><input type="range" id="bgBright" min="0" max="2" step="0.01" value="0.8"><span class="val" id="bgBrightV">0.8</span></label>
+    <label style="cursor:pointer"><input type="checkbox" id="bgEnabled" style="cursor:pointer"> Show Background</label>
+    <button id="resetBtn">Reset Camera</button>
+    <label style="cursor:pointer"><input type="checkbox" id="debugLights" style="cursor:pointer"> Show Lights</label>
+  </div>
+  <div class="group">
+    <div class="group-title">Settings</div>
+    <div class="btn-row">
+      <button id="exportBtn">Export</button>
+      <button id="importBtn">Import</button>
+    </div>
+    <textarea id="settingsBox" class="settings-box" placeholder="Paste settings JSON here..."></textarea>
+  </div>
+</div>
+
+<script>
+// ── WebGL Init ───────────────────────────────────────────────
+const canvas = document.getElementById('gl');
+const gl = canvas.getContext('webgl', {antialias:true, alpha:false});
+gl.enable(gl.DEPTH_TEST);
+gl.clearColor(0.067, 0.067, 0.067, 1);
+
+function resize(){
+  const r = devicePixelRatio;
+  canvas.width = canvas.clientWidth * r;
+  canvas.height = canvas.clientHeight * r;
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Shared procedural environment GLSL ──────────────────────
+const envGLSL = `
+// Hash-based pseudo-noise
+float hash(vec3 p){
+  p = fract(p * vec3(443.897, 441.423, 437.195));
+  p += dot(p, p.yzx + 19.19);
+  return fract((p.x + p.y) * p.z);
+}
+float noise3(vec3 p){
+  vec3 i = floor(p); vec3 f = fract(p);
+  f = f*f*(3.0-2.0*f);
+  float n = mix(
+    mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),
+        mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+    mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),
+        mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
+  return n;
+}
+float fbm(vec3 p){
+  float v=0.0, a=0.5;
+  for(int i=0;i<4;i++){v+=a*noise3(p);p*=2.1;a*=0.5;}
+  return v;
+}
+vec3 proceduralEnv(vec3 dir){
+  vec3 d = normalize(dir);
+
+  // Base gradient: warm bottom to cool top
+  vec3 col = mix(vec3(0.06,0.03,0.08), vec3(0.02,0.04,0.12), d.y*0.5+0.5);
+
+  // Nebula bands
+  float n1 = fbm(d * 3.0 + vec3(0.0, 0.0, 1.5));
+  float n2 = fbm(d * 5.0 + vec3(3.7, 1.2, 0.0));
+  float n3 = fbm(d * 4.0 + vec3(1.0, 4.0, 2.0));
+
+  // Color nebula clouds
+  vec3 neb1 = vec3(0.4, 0.1, 0.5) * smoothstep(0.35, 0.65, n1) * 0.8;
+  vec3 neb2 = vec3(0.1, 0.3, 0.6) * smoothstep(0.4, 0.7, n2) * 0.6;
+  vec3 neb3 = vec3(0.5, 0.15, 0.1) * smoothstep(0.45, 0.7, n3) * 0.5;
+  col += neb1 + neb2 + neb3;
+
+  // Bright aurora-like band near equator
+  float equator = exp(-8.0 * d.y * d.y);
+  float auroraWave = sin(d.x * 8.0 + d.z * 6.0 + n1 * 4.0) * 0.5 + 0.5;
+  col += vec3(0.1, 0.4, 0.35) * equator * auroraWave * 0.5;
+
+  // Warm hotspot
+  float hot = max(dot(d, normalize(vec3(0.7, 0.4, 0.5))), 0.0);
+  col += vec3(0.6, 0.25, 0.1) * pow(hot, 8.0) * 0.7;
+
+  // Cool hotspot
+  float cool = max(dot(d, normalize(vec3(-0.5, 0.3, -0.7))), 0.0);
+  col += vec3(0.1, 0.2, 0.5) * pow(cool, 6.0) * 0.5;
+
+  // Scatter of "stars"
+  float star = noise3(d * 80.0);
+  col += vec3(0.8, 0.85, 1.0) * smoothstep(0.92, 0.96, star) * 0.4;
+
+  // Subtle color variation bands (good for dispersion to split)
+  float bands = sin(d.y * 12.0 + d.x * 8.0 + n2 * 3.0);
+  col += vec3(0.2, 0.05, 0.0) * max(bands, 0.0) * 0.15;
+  col += vec3(0.0, 0.05, 0.2) * max(-bands, 0.0) * 0.15;
+
+  return col;
+}
+`;
+
+// ── Background Skybox Shader ────────────────────────────────
+const bgVS = `
+attribute vec2 aPos;
+varying vec2 vUV;
+void main(){
+  vUV = aPos;
+  gl_Position = vec4(aPos, 0.9999, 1.0);
+}`;
+
+const bgFS = `
+precision highp float;
+varying vec2 vUV;
+uniform mat4 uInvVP;
+uniform float uBgBright;
+` + envGLSL + `
+void main(){
+  // Reconstruct world ray direction from screen UV
+  vec4 clip = vec4(vUV, 1.0, 1.0);
+  vec4 world = uInvVP * clip;
+  vec3 dir = normalize(world.xyz / world.w);
+
+  vec3 col = proceduralEnv(dir) * uBgBright;
+  col = col/(col+1.0);
+  col = pow(col, vec3(1.0/2.2));
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+// ── Inner Die Shader (solid, flat normals) ───────────────────
+const innerVS = `
+attribute vec3 aPos, aNorm;
+uniform mat4 uMVP, uModel;
+uniform mat3 uNormMat;
+uniform float uScale;
+varying vec3 vN, vWorldPos;
+void main(){
+  vec3 scaled = aPos * uScale;
+  vWorldPos = (uModel * vec4(scaled,1.0)).xyz;
+  vN = normalize(uNormMat * aNorm);
+  gl_Position = uMVP * vec4(scaled,1.0);
+}`;
+
+const innerFS = `
+precision highp float;
+varying vec3 vN, vWorldPos;
+uniform vec3 uEye, uBaseColor;
+uniform float uMetallic, uRoughness, uSpecInt, uAmbient, uEnvRef;
+uniform vec3 uPointPos, uPointCol;
+uniform float uPointInt;
+uniform vec3 uSheenCol;
+uniform float uSheenInt, uSheenRough;
+uniform vec3 uL1Dir, uL1Col; uniform float uL1Int;
+uniform vec3 uL2Dir, uL2Col; uniform float uL2Int;
+uniform vec3 uL3Dir, uL3Col; uniform float uL3Int;
+uniform float uInnerAlpha, uDispersion, uPrismatic;
+uniform float uIriStr, uIriShift, uIriFreq;
+uniform vec3 uIriLightPos;
+uniform float uIriViewMix, uShellFPow;
+uniform float uBgEnabled;
+` + envGLSL + `
+
+vec3 simpleEnv(vec3 dir){
+  vec3 c = vec3(0.0);
+  c += max(dir.y,0.0)*vec3(0.15,0.18,0.35);
+  c += max(-dir.y,0.0)*vec3(0.05,0.04,0.06);
+  c += max(dir.x,0.0)*vec3(0.25,0.12,0.15)*0.4;
+  c += max(-dir.x,0.0)*vec3(0.1,0.15,0.25)*0.4;
+  c += max(dir.z,0.0)*vec3(0.2,0.2,0.15)*0.3;
+  c += max(-dir.z,0.0)*vec3(0.12,0.1,0.2)*0.3;
+  return c;
+}
+vec3 sampleEnv(vec3 dir){
+  return uBgEnabled > 0.5 ? proceduralEnv(dir) : simpleEnv(dir);
+}
+
+vec3 iridescentColor(float t){
+  return vec3(0.5+0.5*cos(t), 0.5+0.5*cos(t+2.094), 0.5+0.5*cos(t+4.189));
+}
+
+// Compute what iridescence a refracted ray would see hitting the shell
+vec3 sampleShellIri(vec3 refDir, vec3 n, vec3 v){
+  // Approximate the shell normal the refracted ray would hit as the refracted direction itself
+  // Thin-film interference along that direction
+  vec3 iriLDir = normalize(uIriLightPos - vWorldPos);
+  float iriNdotL = max(dot(refDir, iriLDir), 0.0);
+  float refNdotV = max(dot(refDir, v), 0.0);
+  float thinFilm = mix(iriNdotL, refNdotV, uIriViewMix) * uIriFreq * 3.14159 + uIriShift;
+  vec3 iriCol = iridescentColor(thinFilm);
+  float shellFresnel = pow(1.0 - max(dot(refDir, v), 0.0), uShellFPow);
+  return iriCol * uIriStr * (shellFresnel * 0.7 + 0.3);
+}
+
+vec3 calcLight(vec3 n, vec3 v, vec3 lDir, vec3 lCol, float lInt, float a2, float specMul, vec3 F0, float fres){
+  vec3 L = normalize(lDir);
+  float NdL = max(dot(n,L),0.0);
+  vec3 H = normalize(L+v);
+  float NdH = max(dot(n,H),0.0);
+  float den = NdH*NdH*(a2-1.0)+1.0;
+  float D = min(a2/(3.14159*den*den+0.0001), 8.0);
+  vec3 specF = F0+(1.0-F0)*fres;
+  return lCol * lInt * NdL * (vec3(1.0) + specF * D * specMul);
+}
+
+void main(){
+  vec3 n = normalize(vN);
+  vec3 v = normalize(uEye - vWorldPos);
+  float NdotV = max(dot(n,v), 0.0);
+  float fresnel = pow(1.0 - NdotV, 3.0);
+  float a = uRoughness*uRoughness; float a2 = a*a;
+  vec3 base = uBaseColor;
+  vec3 F0 = mix(vec3(0.04), base, uMetallic);
+
+  if(uPrismatic > 0.5){
+    // ── Prismatic / Glass mode ──
+    float iorBase = 1.45;
+    vec3 refR = refract(-v, n, 1.0/(iorBase - uDispersion));
+    vec3 refG = refract(-v, n, 1.0/iorBase);
+    vec3 refB = refract(-v, n, 1.0/(iorBase + uDispersion));
+
+    // Sample iridescence along each dispersed ray
+    vec3 iriR = sampleShellIri(refR, n, v);
+    vec3 iriG = sampleShellIri(refG, n, v);
+    vec3 iriB = sampleShellIri(refB, n, v);
+
+    // Each channel sees a different iridescence phase + environment
+    float envStr = uEnvRef * 1.5;
+    vec3 refracted = vec3(
+      iriR.r + sampleEnv(refR).r * envStr * 0.3,
+      iriG.g + sampleEnv(refG).g * envStr * 0.3,
+      iriB.b + sampleEnv(refB).b * envStr * 0.3
+    );
+
+    // Reflection
+    vec3 refl = reflect(-v, n);
+    vec3 reflected = sampleEnv(refl) * 1.2 + sampleShellIri(refl, n, v) * 0.5;
+
+    // Schlick fresnel for glass
+    float f0 = pow((iorBase - 1.0)/(iorBase + 1.0), 2.0);
+    float schlick = f0 + (1.0 - f0) * pow(1.0 - NdotV, 5.0);
+
+    // Specular highlights
+    vec3 spec = vec3(0.0);
+    spec += calcLight(n,v,uL1Dir,uL1Col,uL1Int,a2,uSpecInt,vec3(f0),fresnel);
+    spec += calcLight(n,v,uL2Dir,uL2Col,uL2Int,a2,uSpecInt,vec3(f0),fresnel);
+    spec += calcLight(n,v,uL3Dir,uL3Col,uL3Int,a2,uSpecInt,vec3(f0),fresnel);
+    vec3 pDir = uPointPos - vWorldPos;
+    float pDist = length(pDir);
+    float pAtten = uPointInt / (1.0+0.3*pDist+0.1*pDist*pDist);
+    spec += calcLight(n,v,pDir/pDist,uPointCol,pAtten,a2,uSpecInt,vec3(f0),fresnel);
+
+    // Tint with base color
+    vec3 col = mix(refracted, reflected, schlick) * mix(vec3(1.0), base * 2.0, 0.3) + spec * 0.4;
+    col = col/(col+0.9);
+    col = pow(col, vec3(1.0/2.2));
+
+    float alpha = uInnerAlpha * (0.15 + schlick * 0.85);
+    gl_FragColor = vec4(col, alpha);
+  } else {
+    // ── Solid mode ──
+    vec3 lighting = vec3(uAmbient);
+    lighting += calcLight(n,v,uL1Dir,uL1Col,uL1Int,a2,uSpecInt,F0,fresnel*0.5);
+    lighting += calcLight(n,v,uL2Dir,uL2Col,uL2Int,a2,uSpecInt,F0,fresnel*0.5);
+    lighting += calcLight(n,v,uL3Dir,uL3Col,uL3Int,a2,uSpecInt,F0,fresnel*0.5);
+
+    vec3 pDir = uPointPos - vWorldPos;
+    float pDist = length(pDir); vec3 pL = pDir/pDist;
+    float pAtten = uPointInt / (1.0+0.3*pDist+0.1*pDist*pDist);
+    lighting += calcLight(n,v,pL,uPointCol,pAtten,a2,uSpecInt,F0,fresnel*0.5);
+
+    float sheenA = uSheenRough*uSheenRough;
+    float sheenT = 0.0;
+    vec3 h1s=normalize(normalize(uL1Dir)+v); float NdH1s=max(dot(n,h1s),0.0);
+    sheenT += (1.0-NdH1s*NdH1s)/(1.0+sheenA)*max(dot(n,normalize(uL1Dir)),0.0)*uL1Int;
+    vec3 hPs=normalize(pL+v); float NdHPs=max(dot(n,hPs),0.0);
+    sheenT += (1.0-NdHPs*NdHPs)/(1.0+sheenA)*max(dot(n,pL),0.0)*pAtten;
+    vec3 sheen = uSheenCol*sheenT*uSheenInt;
+
+    vec3 diffuse = base * lighting;
+    vec3 refl = reflect(-v,n);
+    vec3 envC = sampleEnv(refl)*uEnvRef*mix(vec3(1.0),base,uMetallic)*(0.3+fresnel*0.35);
+
+    vec3 col = diffuse*(1.0-uMetallic*0.7) + envC + sheen;
+    col = col/(col+0.9);
+    col = pow(col, vec3(1.0/2.2));
+    gl_FragColor = vec4(col, uInnerAlpha);
+  }
+}`;
+
+// ── Outer Shell Shader (iridescent, transparent) ─────────────
+const outerVS = `
+attribute vec3 aPos, aNorm;
+uniform mat4 uMVP, uModel;
+uniform mat3 uNormMat;
+varying vec3 vN, vWorldPos;
+void main(){
+  vWorldPos = (uModel * vec4(aPos,1.0)).xyz;
+  vN = normalize(uNormMat * aNorm);
+  gl_Position = uMVP * vec4(aPos,1.0);
+}`;
+
+const outerFS = `
+precision highp float;
+varying vec3 vN, vWorldPos;
+uniform vec3 uEye;
+uniform float uIriStr, uIriShift, uIriFreq;
+uniform vec3 uIriLightPos;
+uniform float uIriViewMix;
+uniform float uShellAlpha, uShellFPow;
+uniform vec3 uPointPos, uPointCol;
+uniform float uPointInt;
+
+vec3 iridescentColor(float t){
+  return vec3(
+    0.5+0.5*cos(t),
+    0.5+0.5*cos(t+2.094),
+    0.5+0.5*cos(t+4.189)
+  );
+}
+
+void main(){
+  vec3 n = normalize(vN);
+  vec3 v = normalize(uEye - vWorldPos);
+  float NdotV = max(dot(n,v), 0.0);
+  float fresnel = pow(1.0 - NdotV, uShellFPow);
+
+  // Iridescence from dedicated light source
+  vec3 iriLDir = normalize(uIriLightPos - vWorldPos);
+  float iriNdotL = max(dot(n, iriLDir), 0.0);
+  float thinFilm = mix(iriNdotL, NdotV, uIriViewMix) * uIriFreq * 3.14159 + uIriShift;
+  vec3 iriCol = iridescentColor(thinFilm);
+
+  // Point light adds subtle highlight on shell
+  vec3 pDir = normalize(uPointPos - vWorldPos);
+  float pNdL = max(dot(n, pDir), 0.0);
+
+  // Shell color: iridescence driven by fresnel
+  vec3 col = iriCol * uIriStr * (fresnel*0.7 + 0.3);
+  col += iriCol * pNdL * 0.15 * uIriStr;
+
+  // Alpha: base opacity modulated by fresnel for glassy edges
+  float alpha = uShellAlpha * (0.4 + fresnel*0.6);
+
+  col = col/(col+1.2);
+  col = pow(col, vec3(1.0/2.2));
+  gl_FragColor = vec4(col, alpha);
+}`;
+
+// ── Edge shader ──────────────────────────────────────────────
+const edgeVS = `
+attribute vec3 aPos;
+uniform mat4 uMVP;
+void main(){ gl_Position = uMVP * vec4(aPos,1.0); }`;
+const edgeFS = `
+precision mediump float;
+uniform vec3 uEdgeColor;
+uniform float uEdgeAlpha;
+void main(){ gl_FragColor = vec4(uEdgeColor, uEdgeAlpha); }`;
+
+// ── Debug shader ─────────────────────────────────────────────
+const dbgVS = `
+attribute vec3 aPos;
+uniform mat4 uVP;
+uniform float uSize;
+void main(){ gl_Position = uVP * vec4(aPos,1.0); gl_PointSize = uSize; }`;
+const dbgFS = `
+precision mediump float;
+uniform vec3 uColor;
+void main(){
+  float d = length(gl_PointCoord - vec2(0.5));
+  if(d>0.5) discard;
+  float glow = smoothstep(0.5,0.1,d);
+  gl_FragColor = vec4(uColor*glow, glow);
+}`;
+
+// ── Radar Gem Shader ────────────────────────────────────────
+const radarVS = `
+attribute vec3 aPos, aNorm;
+uniform mat4 uMVP, uModel;
+uniform mat3 uNormMat;
+varying vec3 vN, vWorldPos;
+void main(){
+  vWorldPos = (uModel * vec4(aPos,1.0)).xyz;
+  vN = normalize(uNormMat * aNorm);
+  gl_Position = uMVP * vec4(aPos,1.0);
+}`;
+
+const radarFS = `
+precision highp float;
+varying vec3 vN, vWorldPos;
+uniform vec3 uEye, uRadarCol;
+uniform float uRadarGlow, uRadarFresnel, uTime;
+uniform vec3 uL1Dir; uniform float uL1Int;
+
+void main(){
+  vec3 n = normalize(vN);
+  vec3 v = normalize(uEye - vWorldPos);
+  float NdotV = max(dot(n,v), 0.0);
+
+  // Base lighting: simple diffuse from main light
+  vec3 L = normalize(uL1Dir);
+  float NdL = max(dot(n,L), 0.0);
+  vec3 col = uRadarCol * (0.25 + NdL * 0.45);
+
+  // Fresnel glow: bright edges, holographic edge-lit look
+  float fresnel = pow(1.0 - NdotV, 2.5);
+  col += uRadarCol * fresnel * uRadarFresnel;
+
+  // Emission pulse: slow breathing glow across the whole surface
+  // Two overlapping sine waves create an organic, non-mechanical rhythm
+  float pulse = 0.5 + 0.5 * sin(uTime * 1.2);
+  float pulse2 = 0.5 + 0.5 * sin(uTime * 0.7 + 2.0);
+  float breath = pulse * 0.6 + pulse2 * 0.4; // 0 to 1 range
+  col += uRadarCol * breath * uRadarGlow;
+
+  // Slight brightening on faces facing camera
+  float peakGlow = pow(NdotV, 3.0) * 0.2;
+  col += uRadarCol * peakGlow;
+
+  col = col/(col+0.8);
+  col = pow(col, vec3(1.0/2.2));
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+// ── Compile helpers ──────────────────────────────────────────
+function mkShader(src, type){
+  const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+function mkProgram(vs, fs){
+  const p=gl.createProgram();
+  gl.attachShader(p, mkShader(vs, gl.VERTEX_SHADER));
+  gl.attachShader(p, mkShader(fs, gl.FRAGMENT_SHADER));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(p));
+  return p;
+}
+
+const innerProg = mkProgram(innerVS, innerFS);
+const outerProg = mkProgram(outerVS, outerFS);
+const edgeProg = mkProgram(edgeVS, edgeFS);
+const dbgProg = mkProgram(dbgVS, dbgFS);
+const bgProg = mkProgram(bgVS, bgFS);
+const radarProg = mkProgram(radarVS, radarFS);
+
+// Fullscreen quad for background
+const bgQuadBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, bgQuadBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+
+// Get uniform/attrib locations
+function getLocs(prog, attribs, uniforms){
+  const L = {};
+  attribs.forEach(n => L[n] = gl.getAttribLocation(prog, n));
+  uniforms.forEach(n => L[n] = gl.getUniformLocation(prog, n));
+  return L;
+}
+
+const iLoc = getLocs(innerProg, ['aPos','aNorm'], [
+  'uMVP','uModel','uNormMat','uEye','uBaseColor','uScale',
+  'uMetallic','uRoughness','uSpecInt','uAmbient','uEnvRef',
+  'uPointPos','uPointCol','uPointInt',
+  'uSheenCol','uSheenInt','uSheenRough',
+  'uL1Dir','uL1Col','uL1Int','uL2Dir','uL2Col','uL2Int','uL3Dir','uL3Col','uL3Int',
+  'uInnerAlpha','uDispersion','uPrismatic',
+  'uIriStr','uIriShift','uIriFreq','uIriLightPos','uIriViewMix','uShellFPow',
+  'uBgEnabled'
+]);
+const oLoc = getLocs(outerProg, ['aPos','aNorm'], [
+  'uMVP','uModel','uNormMat','uEye',
+  'uIriStr','uIriShift','uIriFreq','uIriLightPos','uIriViewMix',
+  'uShellAlpha','uShellFPow',
+  'uPointPos','uPointCol','uPointInt'
+]);
+const eLoc = getLocs(edgeProg, ['aPos'], ['uMVP','uEdgeColor','uEdgeAlpha']);
+const dLoc = getLocs(dbgProg, ['aPos'], ['uVP','uSize','uColor']);
+const bgLoc = getLocs(bgProg, ['aPos'], ['uInvVP','uBgBright']);
+const rLoc = getLocs(radarProg, ['aPos','aNorm'], [
+  'uMVP','uModel','uNormMat','uEye','uRadarCol',
+  'uRadarGlow','uRadarFresnel','uTime','uL1Dir','uL1Int'
+]);
+
+// ── D10 Geometry ─────────────────────────────────────────────
+const NN = 5, R = 1.0;
+const RATIO = 9.4724; // h/d ratio for planar kite faces
+const defaultH = 0.155 * RATIO; // ≈ 1.468
+
+function buildRings(h){
+  const d = h / RATIO;
+  const upper = [], lower = [];
+  for (let i=0;i<NN;i++){
+    const au = 2*Math.PI*i/NN;
+    upper.push([R*Math.cos(au), d, R*Math.sin(au)]);
+    const al = 2*Math.PI*(i+0.5)/NN;
+    lower.push([R*Math.cos(al), -d, R*Math.sin(al)]);
+  }
+  return {upper, lower, topApex:[0,h,0], botApex:[0,-h,0]};
+}
+
+function buildFlat(h){
+  const {upper,lower,topApex,botApex}=buildRings(h);
+  const pos=[],nrm=[];
+  function addKite(a,b,c,d){
+    const diag1=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+    const diag2=[d[0]-b[0],d[1]-b[1],d[2]-b[2]];
+    let n=[diag1[1]*diag2[2]-diag1[2]*diag2[1],diag1[2]*diag2[0]-diag1[0]*diag2[2],diag1[0]*diag2[1]-diag1[1]*diag2[0]];
+    const l=Math.sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
+    if(l>0) n=[n[0]/l,n[1]/l,n[2]/l];
+    // Ensure normal points outward (away from origin) using face centroid
+    const cx=(a[0]+b[0]+c[0]+d[0])*0.25, cy=(a[1]+b[1]+c[1]+d[1])*0.25, cz=(a[2]+b[2]+c[2]+d[2])*0.25;
+    if(n[0]*cx+n[1]*cy+n[2]*cz < 0){ n[0]=-n[0]; n[1]=-n[1]; n[2]=-n[2]; }
+    [a,b,c,a,c,d].forEach(v=>{pos.push(...v);nrm.push(...n);});
+  }
+  for(let i=0;i<NN;i++){
+    const ni=(i+1)%NN;
+    addKite(topApex,upper[i],lower[i],upper[ni]);
+    addKite(botApex,lower[ni],upper[ni],lower[i]);
+  }
+  return {positions:new Float32Array(pos),normals:new Float32Array(nrm),count:pos.length/3};
+}
+
+function buildSmooth(h){
+  const {upper,lower,topApex,botApex}=buildRings(h);
+  const verts=[topApex,botApex,...upper,...lower];
+  const vertNormals=verts.map(()=>[0,0,0]);
+  function faceNorm(a,b,c){
+    const e1=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], e2=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+    const n=[e1[1]*e2[2]-e1[2]*e2[1],e1[2]*e2[0]-e1[0]*e2[2],e1[0]*e2[1]-e1[1]*e2[0]];
+    const l=Math.sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
+    return l>0?[n[0]/l,n[1]/l,n[2]/l]:n;
+  }
+  function ensureOutward(n, vIdxArr){
+    // Check normal points outward using centroid of face vertices
+    let cx=0,cy=0,cz=0;
+    vIdxArr.forEach(vi=>{cx+=verts[vi][0];cy+=verts[vi][1];cz+=verts[vi][2];});
+    cx/=vIdxArr.length; cy/=vIdxArr.length; cz/=vIdxArr.length;
+    if(n[0]*cx+n[1]*cy+n[2]*cz < 0){ n[0]=-n[0]; n[1]=-n[1]; n[2]=-n[2]; }
+    return n;
+  }
+  const kites=[];
+  for(let i=0;i<NN;i++){
+    const ni=(i+1)%NN;
+    const uIdx=[0,2+i,7+i,2+ni];
+    const uN=ensureOutward(faceNorm(topApex,upper[i],lower[i]), uIdx);
+    kites.push({idx:uIdx,norm:uN});
+    uIdx.forEach(vi=>{vertNormals[vi][0]+=uN[0];vertNormals[vi][1]+=uN[1];vertNormals[vi][2]+=uN[2];});
+    const lIdx=[1,7+ni,2+ni,7+i];
+    const lN=ensureOutward(faceNorm(botApex,lower[ni],upper[ni]), lIdx);
+    kites.push({idx:lIdx,norm:lN});
+    lIdx.forEach(vi=>{vertNormals[vi][0]+=lN[0];vertNormals[vi][1]+=lN[1];vertNormals[vi][2]+=lN[2];});
+  }
+  vertNormals.forEach(n=>{const l=Math.sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);if(l>0){n[0]/=l;n[1]/=l;n[2]/=l;}});
+  const pos=[],nrm=[];
+  kites.forEach(kite=>{
+    const[a,b,c,dd]=kite.idx;
+    [[a,b,c],[a,c,dd]].forEach(tri=>{
+      tri.forEach(vi=>{pos.push(...verts[vi]);nrm.push(...vertNormals[vi]);});
+    });
+  });
+  return {positions:new Float32Array(pos),normals:new Float32Array(nrm),count:pos.length/3};
+}
+
+function buildEdges(h){
+  const {upper,lower,topApex,botApex}=buildRings(h);
+  const lines=[];
+  for(let i=0;i<NN;i++){
+    const ni=(i+1)%NN;
+    lines.push(...topApex,...upper[i]);
+    lines.push(...upper[i],...lower[i]);
+    lines.push(...lower[i],...upper[ni]);
+    lines.push(...lower[i],...botApex);
+    lines.push(...upper[ni],...lower[ni]);
+  }
+  return {positions:new Float32Array(lines),count:lines.length/3};
+}
+
+let innerMesh=buildFlat(defaultH), outerMesh=buildSmooth(defaultH), edgeMesh=buildEdges(defaultH);
+let vertCount=innerMesh.count, edgeCount=edgeMesh.count;
+
+function mkBuf(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);return b;}
+function updateBuf(buf,data){gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);}
+const innerPosBuf=mkBuf(innerMesh.positions), innerNrmBuf=mkBuf(innerMesh.normals);
+const outerPosBuf=mkBuf(outerMesh.positions), outerNrmBuf=mkBuf(outerMesh.normals);
+const edgeBuf=mkBuf(edgeMesh.positions);
+const dbgBuf=gl.createBuffer();
+
+// ── Radar Gem Geometry ──────────────────────────────────────
+function buildRadarGem(values, maxR, radarPoleRatio, diePoleH, innerScale){
+  // values: array of 5, each 1-5
+  // radarPoleRatio: 0-1 fraction of die's pole height
+  const NN=5;
+  const pH = radarPoleRatio * diePoleH * innerScale;
+  const topApex=[0, pH, 0];
+  const botApex=[0, -pH, 0];
+  const ring=[];
+  for(let i=0;i<NN;i++){
+    const angle=2*Math.PI*i/NN; // match d10 upper ring vertex angles
+    const r = (values[i]/5) * maxR * innerScale;
+    ring.push([r*Math.cos(angle), 0, r*Math.sin(angle)]);
+  }
+  const pos=[], nrm=[];
+  function triNorm(a,b,c){
+    const e1=[b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+    const e2=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+    let n=[e1[1]*e2[2]-e1[2]*e2[1],e1[2]*e2[0]-e1[0]*e2[2],e1[0]*e2[1]-e1[1]*e2[0]];
+    const l=Math.sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
+    if(l>0){n[0]/=l;n[1]/=l;n[2]/=l;}
+    return n;
+  }
+  function addTri(a,b,c){
+    let n=triNorm(a,b,c);
+    // Ensure outward-pointing
+    const cx=(a[0]+b[0]+c[0])/3, cy=(a[1]+b[1]+c[1])/3, cz=(a[2]+b[2]+c[2])/3;
+    if(n[0]*cx+n[1]*cy+n[2]*cz<0){n[0]=-n[0];n[1]=-n[1];n[2]=-n[2];}
+    [a,b,c].forEach(v=>{pos.push(...v);nrm.push(...n);});
+  }
+  for(let i=0;i<NN;i++){
+    const ni=(i+1)%NN;
+    // Upper half: apex → ring[i] → ring[next]
+    addTri(topApex, ring[i], ring[ni]);
+    // Lower half: apex → ring[next] → ring[i] (reversed winding)
+    addTri(botApex, ring[ni], ring[i]);
+  }
+  return {positions:new Float32Array(pos), normals:new Float32Array(nrm), count:pos.length/3};
+}
+
+const radarPosBuf=mkBuf(new Float32Array(90*3)); // 10 tris × 3 verts × 3 coords max
+const radarNrmBuf=mkBuf(new Float32Array(90*3));
+let radarVertCount=0;
+
+let lastPoleH=defaultH;
+function rebuildGeometry(h){
+  if(Math.abs(h-lastPoleH)<0.0001) return;
+  lastPoleH=h;
+  innerMesh=buildFlat(h); outerMesh=buildSmooth(h); edgeMesh=buildEdges(h);
+  vertCount=innerMesh.count; edgeCount=edgeMesh.count;
+  updateBuf(innerPosBuf,innerMesh.positions); updateBuf(innerNrmBuf,innerMesh.normals);
+  updateBuf(outerPosBuf,outerMesh.positions); updateBuf(outerNrmBuf,outerMesh.normals);
+  updateBuf(edgeBuf,edgeMesh.positions);
+}
+
+// ── Matrix Utilities ─────────────────────────────────────────
+function perspective(fov,asp,n,f){const t=1/Math.tan(fov/2),nf=1/(n-f);return new Float32Array([t/asp,0,0,0,0,t,0,0,0,0,(f+n)*nf,-1,0,0,2*f*n*nf,0]);}
+function mul4(a,b){const r=new Float32Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){r[j*4+i]=0;for(let k=0;k<4;k++)r[j*4+i]+=a[k*4+i]*b[j*4+k];}return r;}
+function rotXM(a){const c=Math.cos(a),s=Math.sin(a);return new Float32Array([1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]);}
+function rotYM(a){const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);}
+function normMat3(m){return new Float32Array([m[0],m[1],m[2],m[4],m[5],m[6],m[8],m[9],m[10]]);}
+function inv4(m){
+  const a=m[0],b=m[1],c=m[2],d=m[3],e=m[4],f=m[5],g=m[6],h=m[7],
+    i=m[8],j=m[9],k=m[10],l=m[11],M=m[12],n=m[13],o=m[14],p=m[15],
+    q=a*f-b*e,r=a*g-c*e,s=a*h-d*e,t=b*g-c*f,u=b*h-d*f,v=c*h-d*g,
+    w=i*n-j*M,x=i*o-k*M,y=i*p-l*M,z=j*o-k*n,A=j*p-l*n,B=k*p-l*o,
+    det=1/(q*B-r*A+s*z+t*y-u*x+v*w);
+  return new Float32Array([
+    (f*B-g*A+h*z)*det,(c*A-b*B-d*z)*det,(n*v-o*u+p*t)*det,(k*u-j*v-l*t)*det,
+    (g*y-e*B-h*x)*det,(a*B-c*y+d*x)*det,(o*s-M*v-p*r)*det,(i*v-k*s+l*r)*det,
+    (e*A-f*y+h*w)*det,(b*y-a*A-d*w)*det,(M*u-n*s+p*q)*det,(j*s-i*u-l*q)*det,
+    (f*x-e*z-g*w)*det,(a*z-b*x+c*w)*det,(n*r-M*t-o*q)*det,(i*t-j*r+k*q)*det]);
+}
+
+// ── Quaternion rotation ──────────────────────────────────────
+let quat=[0,0,0,1], drag=false, lmx, lmy, spinVX=0, spinVY=0;
+function qMul(a,b){return[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];}
+function qAxis(ax,ay,az,ang){const ha=ang*0.5,s=Math.sin(ha),c=Math.cos(ha),l=Math.sqrt(ax*ax+ay*ay+az*az)||1;return[ax/l*s,ay/l*s,az/l*s,c];}
+function qNorm(q){const l=Math.sqrt(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3]);return[q[0]/l,q[1]/l,q[2]/l,q[3]/l];}
+function qToMat4(q){const[x,y,z,w]=q;const x2=x+x,y2=y+y,z2=z+z;const xx=x*x2,xy=x*y2,xz=x*z2,yy=y*y2,yz=y*z2,zz=z*z2,wx=w*x2,wy=w*y2,wz=w*z2;return new Float32Array([1-yy-zz,xy+wz,xz-wy,0,xy-wz,1-xx-zz,yz+wx,0,xz+wy,yz-wx,1-xx-yy,0,0,0,0,1]);}
+function applyRot(dx,dy){quat=qNorm(qMul(qMul(qAxis(1,0,0,dy),qAxis(0,1,0,dx)),quat));}
+
+quat=qNorm(qMul(qAxis(1,0,0,0.4),qAxis(0,1,0,0.3)));
+
+canvas.addEventListener('pointerdown',e=>{drag=true;lmx=e.clientX;lmy=e.clientY;spinVX=0;spinVY=0;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;const dx=(e.clientX-lmx)*0.007,dy=(e.clientY-lmy)*0.007;lmx=e.clientX;lmy=e.clientY;spinVX=dx;spinVY=dy;applyRot(dx,dy);});
+canvas.addEventListener('pointerup',()=>drag=false);
+
+// ── UI Bindings ──────────────────────────────────────────────
+function bindSlider(id){
+  const el=document.getElementById(id),vEl=document.getElementById(id+'V');
+  el.addEventListener('input',()=>{const v=parseFloat(el.value);vEl.textContent=el.step>=1?v.toFixed(0):el.step>=0.1?v.toFixed(1):v.toFixed(el.step>=0.01?2:3);});
+  return()=>parseFloat(el.value);
+}
+const getShellAlpha=bindSlider('shellAlpha'), getInnerScale=bindSlider('innerScale');
+const getPoleH=bindSlider('poleH');
+const getInnerAlpha=bindSlider('innerAlpha'), getDispersion=bindSlider('dispersion');
+const innerModeEl=document.getElementById('innerMode');
+const getIriStr=bindSlider('iriStr'), getIriShift=bindSlider('iriShift'), getIriFreq=bindSlider('iriFreq');
+const getShellFPow=bindSlider('shellFPow');
+const getIriLX=bindSlider('iriLX'), getIriLY=bindSlider('iriLY'), getIriLZ=bindSlider('iriLZ');
+const getIriViewMix=bindSlider('iriViewMix');
+const getMetallic=bindSlider('metallic'), getRoughness=bindSlider('roughness');
+const getSpecInt=bindSlider('specInt'), getAmbient=bindSlider('ambient'), getEnvRef=bindSlider('envRef');
+const getSheenInt=bindSlider('sheenInt'), getSheenRough=bindSlider('sheenRough');
+const getPointInt=bindSlider('pointInt');
+const getPointX=bindSlider('pointX'), getPointY=bindSlider('pointY'), getPointZ=bindSlider('pointZ');
+const getL1Int=bindSlider('l1Int'), getL1X=bindSlider('l1X'), getL1Y=bindSlider('l1Y'), getL1Z=bindSlider('l1Z');
+const getL2Int=bindSlider('l2Int'), getL2X=bindSlider('l2X'), getL2Y=bindSlider('l2Y'), getL2Z=bindSlider('l2Z');
+const getL3Int=bindSlider('l3Int'), getL3X=bindSlider('l3X'), getL3Y=bindSlider('l3Y'), getL3Z=bindSlider('l3Z');
+const getZoom=bindSlider('zoom'), getAutoSpd=bindSlider('autoSpd');
+const getBgBright=bindSlider('bgBright');
+const getEdgeAlpha=bindSlider('edgeAlpha');
+const getRadarRadius=bindSlider('radarRadius'), getRadarPoleH=bindSlider('radarPoleH');
+const getRadarGlow=bindSlider('radarGlow'), getRadarFresnel=bindSlider('radarFresnel');
+const getRSincerity=bindSlider('rSincerity'), getRExcitement=bindSlider('rExcitement');
+const getRCompetence=bindSlider('rCompetence'), getRRuggedness=bindSlider('rRuggedness');
+const getRSophist=bindSlider('rSophist');
+const radarEnabledEl=document.getElementById('radarEnabled');
+const radarColEl=document.getElementById('radarCol');
+const zoomEl=document.getElementById('zoom'), zoomVEl=document.getElementById('zoomV');
+const colEl=document.getElementById('baseCol'), pointColEl=document.getElementById('pointCol');
+const sheenColEl=document.getElementById('sheenCol'), edgeColEl=document.getElementById('edgeCol');
+const l1ColEl=document.getElementById('l1Col'), l2ColEl=document.getElementById('l2Col'), l3ColEl=document.getElementById('l3Col');
+const debugEl=document.getElementById('debugLights');
+const bgEnabledEl=document.getElementById('bgEnabled');
+
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  quat=qNorm(qMul(qAxis(1,0,0,0.4),qAxis(0,1,0,0.3)));
+  spinVX=0;spinVY=0;zoomEl.value=5;zoomVEl.textContent='5.0';
+});
+canvas.addEventListener('wheel',e=>{e.preventDefault();let z=parseFloat(zoomEl.value)+e.deltaY*0.005;z=Math.max(2,Math.min(15,z));zoomEl.value=z;zoomVEl.textContent=z.toFixed(1);},{passive:false});
+
+// ── Settings Import/Export ───────────────────────────────────
+const settingsBox=document.getElementById('settingsBox');
+const sliderIds=['shellAlpha','iriStr','iriShift','iriFreq','shellFPow',
+  'iriLX','iriLY','iriLZ','iriViewMix',
+  'innerScale','poleH','innerAlpha','dispersion','metallic','roughness','specInt','ambient','envRef',
+  'sheenInt','sheenRough',
+  'l1Int','l1X','l1Y','l1Z','l2Int','l2X','l2Y','l2Z','l3Int','l3X','l3Y','l3Z',
+  'pointInt','pointX','pointY','pointZ',
+  'zoom','autoSpd','bgBright','edgeAlpha',
+  'rSincerity','rExcitement','rCompetence','rRuggedness','rSophist',
+  'radarRadius','radarPoleH','radarGlow','radarFresnel'];
+const colorIds=['baseCol','pointCol','sheenCol','edgeCol','l1Col','l2Col','l3Col','radarCol'];
+
+function exportSettings(){
+  const s={};
+  sliderIds.forEach(id=>{s[id]=parseFloat(document.getElementById(id).value);});
+  colorIds.forEach(id=>{s[id]=document.getElementById(id).value;});
+  s.debugLights=debugEl.checked;
+  s.bgEnabled=bgEnabledEl.checked;
+  s.radarEnabled=radarEnabledEl.checked;
+  s.innerMode=innerModeEl.value;
+  const json=JSON.stringify(s,null,2);
+  settingsBox.value=json;
+  settingsBox.classList.add('show');
+  settingsBox.select();
+  navigator.clipboard.writeText(json).catch(()=>{});
+}
+
+function importSettings(){
+  settingsBox.classList.add('show');
+  settingsBox.focus();
+  const raw=settingsBox.value.trim();
+  if(!raw) return;
+  try{
+    const s=JSON.parse(raw);
+    sliderIds.forEach(id=>{
+      if(s[id]!==undefined){
+        const el=document.getElementById(id);
+        el.value=s[id];
+        el.dispatchEvent(new Event('input'));
+      }
+    });
+    colorIds.forEach(id=>{
+      if(s[id]!==undefined) document.getElementById(id).value=s[id];
+    });
+    if(s.debugLights!==undefined) debugEl.checked=s.debugLights;
+    if(s.bgEnabled!==undefined) bgEnabledEl.checked=s.bgEnabled;
+    if(s.radarEnabled!==undefined) radarEnabledEl.checked=s.radarEnabled;
+    if(s.innerMode!==undefined) innerModeEl.value=s.innerMode;
+    settingsBox.classList.remove('show');
+  }catch(e){
+    settingsBox.style.borderColor='#833';
+    setTimeout(()=>settingsBox.style.borderColor='',1500);
+  }
+}
+
+document.getElementById('exportBtn').addEventListener('click',exportSettings);
+document.getElementById('importBtn').addEventListener('click',importSettings);
+
+function hexToRGB(hex){return[parseInt(hex.slice(1,3),16)/255,parseInt(hex.slice(3,5),16)/255,parseInt(hex.slice(5,7),16)/255];}
+
+// Debug light helpers
+const dirLightScale=4.0;
+function getDirLights(){
+  return [
+    {dir:[getL1X(),getL1Y(),getL1Z()], col:hexToRGB(l1ColEl.value)},
+    {dir:[getL2X(),getL2Y(),getL2Z()], col:hexToRGB(l2ColEl.value)},
+    {dir:[getL3X(),getL3Y(),getL3Z()], col:hexToRGB(l3ColEl.value)}
+  ];
+}
+function dirToPos(d){const len=Math.sqrt(d[0]**2+d[1]**2+d[2]**2)||1;return[d[0]/len*dirLightScale,d[1]/len*dirLightScale,d[2]/len*dirLightScale];}
+
+// ── Draw helpers ─────────────────────────────────────────────
+function bindAttrib(loc, buf, size){
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+}
+
+// ── Render ───────────────────────────────────────────────────
+const eye=[0,0,5];
+const startTime=performance.now()/1000;
+
+function render(){
+  requestAnimationFrame(render);
+  resize();
+  rebuildGeometry(getPoleH());
+  eye[2]=getZoom();
+  const uTime=(performance.now()/1000)-startTime;
+
+  // Rebuild radar gem
+  if(radarEnabledEl.checked){
+    const vals=[getRSincerity(),getRExcitement(),getRCompetence(),getRRuggedness(),getRSophist()];
+    const rGem=buildRadarGem(vals, getRadarRadius(), getRadarPoleH(), getPoleH(), getInnerScale());
+    updateBuf(radarPosBuf, rGem.positions);
+    updateBuf(radarNrmBuf, rGem.normals);
+    radarVertCount=rGem.count;
+  }
+
+  if(!drag){const as=getAutoSpd()*0.006;spinVX*=0.95;spinVY*=0.95;applyRot(spinVX+as,spinVY);}
+
+  const asp=canvas.width/canvas.height;
+  const proj=perspective(Math.PI/5.5,asp,0.1,100);
+  const model=qToMat4(quat);
+  const view=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,-eye[0],-eye[1],-eye[2],1]);
+  const mvp=mul4(proj,mul4(view,model));
+  const nm=normMat3(model);
+
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+
+  // ── 0) Background skybox ──────────────────────────────────
+  const vp=mul4(proj,view);
+  const invVP=inv4(vp);
+  if(bgEnabledEl.checked){
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.useProgram(bgProg);
+    gl.uniformMatrix4fv(bgLoc.uInvVP,false,invVP);
+    gl.uniform1f(bgLoc.uBgBright,getBgBright());
+    gl.bindBuffer(gl.ARRAY_BUFFER,bgQuadBuf);
+    gl.enableVertexAttribArray(bgLoc.aPos);
+    gl.vertexAttribPointer(bgLoc.aPos,2,gl.FLOAT,false,0,0);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    gl.enable(gl.DEPTH_TEST);
+  }
+
+  // ── 1) Inner die ──────────────────────────────────────────
+  const isPrismatic = innerModeEl.value === 'prismatic';
+  const innerAlpha = getInnerAlpha();
+
+  gl.enable(gl.CULL_FACE);
+  gl.useProgram(innerProg);
+  gl.uniformMatrix4fv(iLoc.uMVP,false,mvp);
+  gl.uniformMatrix4fv(iLoc.uModel,false,model);
+  gl.uniformMatrix3fv(iLoc.uNormMat,false,nm);
+  gl.uniform3fv(iLoc.uEye,eye);
+  gl.uniform3fv(iLoc.uBaseColor,hexToRGB(colEl.value));
+  gl.uniform1f(iLoc.uScale,getInnerScale());
+  gl.uniform1f(iLoc.uMetallic,getMetallic());
+  gl.uniform1f(iLoc.uRoughness,getRoughness());
+  gl.uniform1f(iLoc.uSpecInt,getSpecInt());
+  gl.uniform1f(iLoc.uAmbient,getAmbient());
+  gl.uniform1f(iLoc.uEnvRef,getEnvRef());
+  gl.uniform3fv(iLoc.uPointPos,[getPointX(),getPointY(),getPointZ()]);
+  gl.uniform3fv(iLoc.uPointCol,hexToRGB(pointColEl.value));
+  gl.uniform1f(iLoc.uPointInt,getPointInt());
+  gl.uniform3fv(iLoc.uSheenCol,hexToRGB(sheenColEl.value));
+  gl.uniform1f(iLoc.uSheenInt,getSheenInt());
+  gl.uniform1f(iLoc.uSheenRough,getSheenRough());
+  gl.uniform3fv(iLoc.uL1Dir,[getL1X(),getL1Y(),getL1Z()]);
+  gl.uniform3fv(iLoc.uL1Col,hexToRGB(l1ColEl.value));
+  gl.uniform1f(iLoc.uL1Int,getL1Int());
+  gl.uniform3fv(iLoc.uL2Dir,[getL2X(),getL2Y(),getL2Z()]);
+  gl.uniform3fv(iLoc.uL2Col,hexToRGB(l2ColEl.value));
+  gl.uniform1f(iLoc.uL2Int,getL2Int());
+  gl.uniform3fv(iLoc.uL3Dir,[getL3X(),getL3Y(),getL3Z()]);
+  gl.uniform3fv(iLoc.uL3Col,hexToRGB(l3ColEl.value));
+  gl.uniform1f(iLoc.uL3Int,getL3Int());
+  gl.uniform1f(iLoc.uInnerAlpha,innerAlpha);
+  gl.uniform1f(iLoc.uDispersion,getDispersion());
+  gl.uniform1f(iLoc.uPrismatic,isPrismatic?1.0:0.0);
+  gl.uniform1f(iLoc.uIriStr,getIriStr());
+  gl.uniform1f(iLoc.uIriShift,getIriShift());
+  gl.uniform1f(iLoc.uIriFreq,getIriFreq());
+  gl.uniform3fv(iLoc.uIriLightPos,[getIriLX(),getIriLY(),getIriLZ()]);
+  gl.uniform1f(iLoc.uIriViewMix,getIriViewMix());
+  gl.uniform1f(iLoc.uShellFPow,getShellFPow());
+  gl.uniform1f(iLoc.uBgEnabled,bgEnabledEl.checked?1.0:0.0);
+  bindAttrib(iLoc.aPos,innerPosBuf,3);
+  bindAttrib(iLoc.aNorm,innerNrmBuf,3);
+
+  if(isPrismatic || innerAlpha < 0.999){
+    // Transparent: back faces first, then front
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    gl.cullFace(gl.FRONT); gl.drawArrays(gl.TRIANGLES,0,vertCount);
+    gl.cullFace(gl.BACK);  gl.drawArrays(gl.TRIANGLES,0,vertCount);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+  } else {
+    // Solid opaque
+    gl.disable(gl.BLEND);
+    gl.depthMask(true);
+    gl.cullFace(gl.BACK);
+    gl.drawArrays(gl.TRIANGLES,0,vertCount);
+  }
+
+  // ── 1.5) Radar Gem ─────────────────────────────────────────
+  if(radarEnabledEl.checked && radarVertCount>0){
+    gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
+    gl.disable(gl.BLEND);
+    gl.depthMask(true);
+    gl.useProgram(radarProg);
+    // Radar geometry is already scaled by innerScale in buildRadarGem
+    gl.uniformMatrix4fv(rLoc.uMVP,false,mvp);
+    gl.uniformMatrix4fv(rLoc.uModel,false,model);
+    gl.uniformMatrix3fv(rLoc.uNormMat,false,nm);
+    gl.uniform3fv(rLoc.uEye,eye);
+    gl.uniform3fv(rLoc.uRadarCol,hexToRGB(radarColEl.value));
+    gl.uniform1f(rLoc.uRadarGlow,getRadarGlow());
+    gl.uniform1f(rLoc.uRadarFresnel,getRadarFresnel());
+    gl.uniform1f(rLoc.uTime,uTime);
+    gl.uniform3fv(rLoc.uL1Dir,[getL1X(),getL1Y(),getL1Z()]);
+    gl.uniform1f(rLoc.uL1Int,getL1Int());
+    bindAttrib(rLoc.aPos,radarPosBuf,3);
+    bindAttrib(rLoc.aNorm,radarNrmBuf,3);
+    gl.drawArrays(gl.TRIANGLES,0,radarVertCount);
+  }
+
+  // ── 2) Edges on inner die (scaled to match) ───────────────
+  const ea=getEdgeAlpha();
+  if(ea>0.001){
+    // Build a scaled MVP that matches the inner die
+    const sc=getInnerScale();
+    const scaleMat=new Float32Array([sc,0,0,0, 0,sc,0,0, 0,0,sc,0, 0,0,0,1]);
+    const scaledModel=mul4(model,scaleMat);
+    const edgeMvp=mul4(proj,mul4(view,scaledModel));
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthFunc(gl.LEQUAL);
+    gl.useProgram(edgeProg);
+    gl.uniformMatrix4fv(eLoc.uMVP,false,edgeMvp);
+    gl.uniform3fv(eLoc.uEdgeColor,hexToRGB(edgeColEl.value));
+    gl.uniform1f(eLoc.uEdgeAlpha,ea);
+    bindAttrib(eLoc.aPos,edgeBuf,3);
+    gl.drawArrays(gl.LINES,0,edgeCount);
+    gl.depthFunc(gl.LESS);
+    gl.disable(gl.BLEND);
+  }
+
+  // ── 3) Outer shell (transparent iridescence) ─────────────
+  const sa=getShellAlpha();
+  if(sa>0.001){
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    // Draw back faces first, then front faces for correct transparency
+    gl.enable(gl.CULL_FACE);
+    gl.useProgram(outerProg);
+    gl.uniformMatrix4fv(oLoc.uMVP,false,mvp);
+    gl.uniformMatrix4fv(oLoc.uModel,false,model);
+    gl.uniformMatrix3fv(oLoc.uNormMat,false,nm);
+    gl.uniform3fv(oLoc.uEye,eye);
+    gl.uniform1f(oLoc.uIriStr,getIriStr());
+    gl.uniform1f(oLoc.uIriShift,getIriShift());
+    gl.uniform1f(oLoc.uIriFreq,getIriFreq());
+    gl.uniform3fv(oLoc.uIriLightPos,[getIriLX(),getIriLY(),getIriLZ()]);
+    gl.uniform1f(oLoc.uIriViewMix,getIriViewMix());
+    gl.uniform1f(oLoc.uShellAlpha,sa);
+    gl.uniform1f(oLoc.uShellFPow,getShellFPow());
+    gl.uniform3fv(oLoc.uPointPos,[getPointX(),getPointY(),getPointZ()]);
+    gl.uniform3fv(oLoc.uPointCol,hexToRGB(pointColEl.value));
+    gl.uniform1f(oLoc.uPointInt,getPointInt());
+    bindAttrib(oLoc.aPos,outerPosBuf,3);
+    bindAttrib(oLoc.aNorm,outerNrmBuf,3);
+    gl.cullFace(gl.FRONT); gl.drawArrays(gl.TRIANGLES,0,vertCount);
+    gl.cullFace(gl.BACK); gl.drawArrays(gl.TRIANGLES,0,vertCount);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+  }
+
+  // ── 4) Debug lights ──────────────────────────────────────
+  if(debugEl.checked){
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthFunc(gl.LEQUAL);
+    const vp=mul4(proj,view);
+    const dls=getDirLights();
+    const pPos=[getPointX(),getPointY(),getPointZ()];
+    const iriPos=[getIriLX(),getIriLY(),getIriLZ()];
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,dbgBuf);
+
+    function drawLine(pos,col,alpha){
+      gl.enableVertexAttribArray(eLoc.aPos);
+      gl.vertexAttribPointer(eLoc.aPos,3,gl.FLOAT,false,0,0);
+      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([...pos,0,0,0]),gl.DYNAMIC_DRAW);
+      gl.uniform3fv(eLoc.uEdgeColor,col);
+      gl.uniform1f(eLoc.uEdgeAlpha,alpha);
+      gl.drawArrays(gl.LINES,0,2);
+    }
+    function drawDot(pos,col,size){
+      gl.enableVertexAttribArray(dLoc.aPos);
+      gl.vertexAttribPointer(dLoc.aPos,3,gl.FLOAT,false,0,0);
+      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(pos),gl.DYNAMIC_DRAW);
+      gl.uniform3fv(dLoc.uColor,col);
+      gl.uniform1f(dLoc.uSize,size);
+      gl.drawArrays(gl.POINTS,0,1);
+    }
+
+    const allLights=[
+      {pos:pPos, col:hexToRGB(pointColEl.value), sz:18},
+      {pos:iriPos, col:[1,0.3,0.9], sz:16}
+    ];
+    dls.forEach(l=>allLights.push({pos:dirToPos(l.dir), col:l.col, sz:12}));
+
+    // Lines (depth-tested)
+    gl.useProgram(edgeProg);
+    gl.uniformMatrix4fv(eLoc.uMVP,false,vp);
+    allLights.forEach(l=>drawLine(l.pos,l.col,0.4));
+
+    // Dots (depth-tested)
+    gl.useProgram(dbgProg);
+    gl.uniformMatrix4fv(dLoc.uVP,false,vp);
+    allLights.forEach(l=>drawDot(l.pos,l.col,l.sz*devicePixelRatio));
+
+    gl.depthFunc(gl.LESS);
+    gl.disable(gl.BLEND);
+  }
+}
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

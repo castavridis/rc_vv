@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { BRAND_PERSONALITY, DIMENSIONS, type Dimension, type Trait } from '../_lib/brand'
 import { saveArtworkRatings } from '../_actions/saveArtworkRatings'
 
@@ -8,9 +8,14 @@ interface TraitRatingFormProps {
   userId: string
   artworkId: string
   initialRatings: Record<string, { score: number; reason: string }>
+  syntheticScores?: {
+    scores: Record<string, { score: number; reason: string }>
+    model: string
+    persona?: string
+  } | null
 }
 
-export default function TraitRatingForm({ userId, artworkId, initialRatings }: TraitRatingFormProps) {
+export default function TraitRatingForm({ userId, artworkId, initialRatings, syntheticScores }: TraitRatingFormProps) {
   const [traitRatings, setTraitRatings] = useState<Record<string, { score: number; reason: string }>>(
     () => Object.fromEntries(
       Object.entries(initialRatings).filter(([key]) => !DIMENSIONS.includes(key as Dimension))
@@ -21,6 +26,41 @@ export default function TraitRatingForm({ userId, artworkId, initialRatings }: T
       DIMENSIONS.map(d => [d, initialRatings[d] ?? { score: 0, reason: '' }])
     )
   )
+  useEffect(() => {
+    if (!syntheticScores) return
+    const { scores, model, persona } = syntheticScores
+    const tag = persona ? `[${model} \u00b7 ${persona}]` : `[${model}]`
+
+    // Populate trait ratings
+    const newTraitRatings: Record<string, { score: number; reason: string }> = {}
+    for (const [trait, val] of Object.entries(scores)) {
+      newTraitRatings[trait] = {
+        score: val.score,
+        reason: val.reason ? `${tag} ${val.reason}` : tag,
+      }
+    }
+    setTraitRatings(newTraitRatings)
+
+    // Derive dimension scores from constituent traits
+    const newDimRatings: Record<string, { score: number; reason: string }> = {}
+    for (const dimension of DIMENSIONS) {
+      const traits = Object.values(BRAND_PERSONALITY[dimension]).flat() as Trait[]
+      const traitScores = traits.map(t => scores[t]?.score ?? 0)
+      const avg = traitScores.reduce((sum, s) => sum + s, 0) / traitScores.length
+      const dimScore = Math.round(avg * 5)
+      const topReasons = traits
+        .filter(t => scores[t]?.score === 1 && scores[t]?.reason)
+        .slice(0, 3)
+        .map(t => scores[t].reason)
+      newDimRatings[dimension] = {
+        score: dimScore,
+        reason: topReasons.length > 0 ? `${tag} ${topReasons.join('; ')}` : tag,
+      }
+    }
+    setDimRatings(newDimRatings)
+    setSaved(false)
+  }, [syntheticScores])
+
   const [expanded, setExpanded] = useState<Set<Dimension>>(new Set())
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)

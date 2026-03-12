@@ -120,4 +120,24 @@ export function buildImagePrompt(
   }
 }
 
+export function buildReasonedImagePrompt(
+  imageUrl: string,
+  artworkContext: string,
+  personaPrompt?: string
+): { system: string; userContent: unknown[] } {
+  const personaPrefix = personaPrompt ? `${personaPrompt}\n\n` : ''
+  const system = `${personaPrefix}${SYSTEM_PROMPT.replace(
+    'Return ONLY a valid JSON object with all 42 trait names as keys and binary scores (0 or 1) as values. No markdown, no explanation, just the JSON object.',
+    'For each trait, return a JSON object where each key is a trait name and the value is an object with "score" (0 or 1) and "reason" (a brief 3-8 word explanation). No markdown, no explanation, just the JSON object.\n\nExample format:\n{"Down-to-Earth": {"score": 1, "reason": "warm earthy tones, grounded feel"}, ...}'
+  )}`
+  return {
+    system,
+    userContent: [
+      { type: 'text', text: `${artworkContext}\n\nAssess the following image against all 42 traits:` },
+      { type: 'image_url', image_url: { url: imageUrl } },
+      { type: 'text', text: 'Return only the JSON object with all 42 trait scores and reasons.' },
+    ],
+  }
+}
+
 export { buildArtworkContext }

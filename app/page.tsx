@@ -2,8 +2,10 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getUser } from './_lib/auth/session'
 import supabase from './_actions/supabase'
+import { getUserDimensionScores } from './_lib/userTasteScores'
 import SessionCard from './_components/SessionCard'
 import LoginButton from './_components/LoginButton'
+import D10Die from './_components/D10Die'
 
 export default async function HomePage() {
   const user = await getUser()
@@ -20,18 +22,24 @@ export default async function HomePage() {
     )
   }
 
-  const { data: sessions } = await supabase
-    .from('sessions')
-    .select('id, title, auto_title, created_at, compositions(thumbnail_url, created_at)')
-    .eq('user_id', user.id)
-    .order('updated_at', { ascending: false })
+  const [{ data: sessions }, scores] = await Promise.all([
+    supabase
+      .from('sessions')
+      .select('id, title, auto_title, created_at, compositions(thumbnail_url, created_at)')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false }),
+    getUserDimensionScores(String(user.id)),
+  ])
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-5xl">
       <div className="flex items-center justify-between mb-10">
-        <div>
-          <h1 className="text-2xl font-bold font-mono">vv.</h1>
-          <p className="text-sm text-zinc-500 font-mono">Hi, {user.name.split(' ')[0]}.</p>
+        <div className="flex items-center gap-4">
+          <D10Die scores={scores} size={240} autoRotate interactive />
+          <div>
+            <h1 className="text-2xl font-bold font-mono">vv.</h1>
+            <p className="text-sm text-zinc-500 font-mono">Hi, {user.name.split(' ')[0]}.</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Link

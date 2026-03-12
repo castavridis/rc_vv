@@ -43,6 +43,33 @@ export function parseModelResponse(content: string): TraitScores | null {
   }
 }
 
+/** Parse a reasoned model response into trait scores with reasons */
+export function parseReasonedResponse(content: string): Record<string, { score: number; reason: string }> | null {
+  const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+  const jsonStr = fenceMatch ? fenceMatch[1] : content
+
+  try {
+    const parsed = JSON.parse(jsonStr.trim())
+    const result: Record<string, { score: number; reason: string }> = {}
+    for (const trait of TRAITS) {
+      const val = parsed[trait]
+      if (val && typeof val === 'object' && 'score' in val) {
+        result[trait] = {
+          score: typeof val.score === 'number' ? (val.score >= 0.5 ? 1 : 0) : 0,
+          reason: typeof val.reason === 'string' ? val.reason : '',
+        }
+      } else if (typeof val === 'number') {
+        result[trait] = { score: val >= 0.5 ? 1 : 0, reason: '' }
+      } else {
+        result[trait] = { score: 0, reason: '' }
+      }
+    }
+    return result
+  } catch {
+    return null
+  }
+}
+
 /** Derive auto-title from top trait scores */
 export function autoTitleFromScores(scores: TraitScores, date: Date = new Date()): string {
   const top = (Object.entries(scores) as [Trait, number][])

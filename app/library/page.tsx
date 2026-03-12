@@ -4,9 +4,12 @@ import { getUser } from '../_lib/auth/session'
 import supabase from '../_actions/supabase'
 import { getRatedArtworkIds, getAllUserRatings } from '../_actions/saveArtworkRatings'
 import { aggregateRatings } from '../_lib/taste-profile'
+import { getSyntheticRaterProfiles } from '../_actions/getSyntheticProfiles'
 import ArtworkCard from '../_components/ArtworkCard'
 import TasteProfileSummary from '../_components/TasteProfileSummary'
 import LibraryHeader from '../_components/LibraryHeader'
+import BulkAssessControl from '../_components/BulkAssessControl'
+import SyntheticRaterProfiles from '../_components/SyntheticRaterProfiles'
 
 interface Props {
   searchParams: Promise<{ lib?: string }>
@@ -37,8 +40,10 @@ export default async function LibraryPage({ searchParams }: Props) {
     supabase.from('libraries').select('id, name').eq('user_id', user.id).order('name'),
   ])
 
+  const artworkIds = (artworks ?? []).map((a: { id: string }) => a.id)
+
   // When filtering by library, only use ratings from artworks in this library
-  const artworkIdsInView = new Set((artworks ?? []).map(a => a.id))
+  const artworkIdsInView = new Set(artworkIds)
   const filteredRatings = lib
     ? allRatings.filter(r => artworkIdsInView.has(r.artwork_id))
     : allRatings
@@ -48,6 +53,7 @@ export default async function LibraryPage({ searchParams }: Props) {
     ? (artworks ?? []).filter(a => ratedIds.has(a.id)).length
     : ratedIds.size
   const libraryList = (libraries ?? []).map(l => ({ id: l.id, name: l.name }))
+  const syntheticProfiles = await getSyntheticRaterProfiles(artworkIds)
 
   // Count artworks rated 4/5 per dimension
   const dimensionNames = ['Sincerity', 'Excitement', 'Competence', 'Sophistication', 'Ruggedness']
@@ -81,6 +87,8 @@ export default async function LibraryPage({ searchParams }: Props) {
             Taste Profile
           </h2>
           <TasteProfileSummary profile={profile} totalRated={totalRated} dimensionCounts={dimCounts} />
+          <BulkAssessControl artworkIds={artworkIds} />
+          <SyntheticRaterProfiles profiles={syntheticProfiles} />
         </aside>
 
         <main className="lg:col-span-3">
