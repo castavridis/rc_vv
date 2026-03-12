@@ -5,8 +5,10 @@ import supabase from '../_actions/supabase'
 import { getRatedArtworkIds, getAllUserRatings } from '../_actions/saveArtworkRatings'
 import { aggregateRatings } from '../_lib/taste-profile'
 import { getSyntheticRaterProfiles } from '../_actions/getSyntheticProfiles'
+import { dimensionScoresFromProfile } from '../_lib/taste-profile'
 import ArtworkCard from '../_components/ArtworkCard'
 import TasteProfileSummary from '../_components/TasteProfileSummary'
+import RadarChart from '../_components/RadarChart'
 import LibraryHeader from '../_components/LibraryHeader'
 import BulkAssessControl from '../_components/BulkAssessControl'
 import SyntheticRaterProfiles from '../_components/SyntheticRaterProfiles'
@@ -67,6 +69,17 @@ export default async function LibraryPage({ searchParams }: Props) {
     dimCounts[dim] = artworksWithHighRating.size
   }
 
+  // Compute dimension-level scores for radar chart
+  const humanDimScores = dimensionScoresFromProfile(profile)
+  const OVERLAY_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#d97706', '#9333ea', '#0891b2']
+  const radarOverlays = syntheticProfiles.map((rater, i) => ({
+    data: dimensionScoresFromProfile(rater.profile),
+    strokeColor: OVERLAY_COLORS[i % OVERLAY_COLORS.length],
+    fillColor: OVERLAY_COLORS[i % OVERLAY_COLORS.length],
+    fillOpacity: 0.05,
+    label: `${rater.modelLabel} · ${rater.personaLabel}`,
+  }))
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
       {lib && (
@@ -86,6 +99,35 @@ export default async function LibraryPage({ searchParams }: Props) {
           <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-4">
             Taste Profile
           </h2>
+          {totalRated > 0 && (
+            <div className="mb-4">
+              <RadarChart
+                data={humanDimScores}
+                width={260}
+                height={260}
+                maxValue={5}
+                fillColor="#18181b"
+                strokeColor="#18181b"
+                fillOpacity={0.15}
+                strokeWidth={1.5}
+                overlays={radarOverlays}
+              />
+              {radarOverlays.length > 0 && (
+                <div className="mt-2 space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-0.5 bg-zinc-800 inline-block" />
+                    <span className="text-[10px] font-mono text-zinc-500">You</span>
+                  </div>
+                  {radarOverlays.map((o, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <span className="w-3 h-0.5 inline-block" style={{ background: o.strokeColor, opacity: 0.8 }} />
+                      <span className="text-[10px] font-mono text-zinc-500">{o.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <TasteProfileSummary profile={profile} totalRated={totalRated} dimensionCounts={dimCounts} />
           <BulkAssessControl artworkIds={artworkIds} />
           <SyntheticRaterProfiles profiles={syntheticProfiles} />

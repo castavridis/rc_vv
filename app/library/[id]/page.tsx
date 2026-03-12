@@ -2,8 +2,11 @@ import { redirect, notFound } from 'next/navigation'
 import { getUser } from '../../_lib/auth/session'
 import supabase from '../../_actions/supabase'
 import { getArtworkRatings } from '../../_actions/saveArtworkRatings'
+import { getSyntheticRaterProfiles } from '../../_actions/getSyntheticProfiles'
+import { dimensionScoresFromProfile, aggregateRatings } from '../../_lib/taste-profile'
 import ArtworkRatingSection from '../../_components/ArtworkRatingSection'
 import ArtworkMetadata from '../../_components/ArtworkMetadata'
+import RadarChart from '../../_components/RadarChart'
 import Link from 'next/link'
 
 interface Props {
@@ -15,12 +18,28 @@ export default async function ArtworkPage({ params }: Props) {
   const user = await getUser()
   if (!user) redirect('/')
 
-  const [{ data: artwork }, existingRatings] = await Promise.all([
+  const [{ data: artwork }, existingRatings, syntheticProfiles] = await Promise.all([
     supabase.from('artworks').select('*').eq('id', id).single(),
     getArtworkRatings(user.id, id),
+    getSyntheticRaterProfiles([id]),
   ])
 
   if (!artwork) notFound()
+
+  // Compute human dimension scores from existing ratings
+  const ratingsArray = Object.entries(existingRatings).map(([trait, r]) => ({ trait, score: r.score }))
+  const humanProfile = aggregateRatings(ratingsArray)
+  const humanDimScores = dimensionScoresFromProfile(humanProfile)
+  const hasHumanRatings = ratingsArray.length > 0
+
+  const OVERLAY_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#d97706', '#9333ea', '#0891b2']
+  const radarOverlays = syntheticProfiles.map((rater, i) => ({
+    data: dimensionScoresFromProfile(rater.profile),
+    strokeColor: OVERLAY_COLORS[i % OVERLAY_COLORS.length],
+    fillColor: OVERLAY_COLORS[i % OVERLAY_COLORS.length],
+    fillOpacity: 0.05,
+    label: `${rater.modelLabel} · ${rater.personaLabel}`,
+  }))
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
@@ -69,6 +88,41 @@ export default async function ArtworkPage({ params }: Props) {
               initialRatings={existingRatings}
             />
           </div>
+
+          {(hasHumanRatings || syntheticProfiles.length > 0) && (
+            <div className="border-t border-zinc-100 pt-6">
+              <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-3">
+                Ratings Comparison
+              </h2>
+              <RadarChart
+                data={hasHumanRatings ? humanDimScores : dimensionScoresFromProfile(syntheticProfiles[0]?.profile ?? {})}
+                width={280}
+                height={280}
+                maxValue={5}
+                fillColor={hasHumanRatings ? '#18181b' : (OVERLAY_COLORS[0])}
+                strokeColor={hasHumanRatings ? '#18181b' : (OVERLAY_COLORS[0])}
+                fillOpacity={0.15}
+                strokeWidth={1.5}
+                overlays={hasHumanRatings ? radarOverlays : radarOverlays.slice(1)}
+              />
+              <div className="mt-2 space-y-0.5">
+                {hasHumanRatings && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-0.5 bg-zinc-800 inline-block" />
+                    <span className="text-[10px] font-mono text-zinc-500">You</span>
+                  </div>
+                )}
+                {syntheticProfiles.map((rater, i) => (
+                  <div key={`${rater.model}::${rater.persona}`} className="flex items-center gap-1.5">
+                    <span className="w-3 h-0.5 inline-block" style={{ background: OVERLAY_COLORS[i % OVERLAY_COLORS.length] }} />
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      {rater.modelLabel} · {rater.personaLabel}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

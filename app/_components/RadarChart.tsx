@@ -2,6 +2,15 @@
 
 import { useEffect, useRef } from 'react';
 
+interface RadarOverlay {
+  data: Record<string, number>;
+  fillColor?: string;
+  fillOpacity?: number;
+  strokeColor?: string;
+  strokeWidth?: number;
+  label?: string;
+}
+
 interface RadarChartProps {
   data: Record<string, number>;
   width?: number;
@@ -13,6 +22,7 @@ interface RadarChartProps {
   title?: string;
   className?: string;
   maxValue?: number;
+  overlays?: RadarOverlay[];
 }
 
 function validateData(data: Record<string, number>): { valid: boolean; error?: string } {
@@ -48,9 +58,10 @@ function createRadarChart(
     strokeWidth: number;
     title?: string;
     maxValue: number;
+    overlays?: RadarOverlay[];
   }
 ): SVGSVGElement {
-  const { width, height, fillColor, fillOpacity, strokeColor, strokeWidth, title, maxValue } = options;
+  const { width, height, fillColor, fillOpacity, strokeColor, strokeWidth, title, maxValue, overlays } = options;
   const keys = Object.keys(data);
   const numDimensions = keys.length;
   const angleStep = (2 * Math.PI) / numDimensions;
@@ -172,6 +183,36 @@ function createRadarChart(
     svg.appendChild(dot);
   });
 
+  // Draw overlay polygons
+  if (overlays) {
+    overlays.forEach(overlay => {
+      const oPoints = keys.map((key, i) => {
+        const angle = i * angleStep - Math.PI / 2;
+        const value = clampValue(overlay.data[key] ?? 0, maxValue);
+        const radius = (value / maxValue) * maxRadius;
+        return polarToCartesian(angle, 1, centerX, centerY, radius);
+      });
+      const oPolyPoints = oPoints.map(p => `${p.x},${p.y}`).join(' ');
+      const oPoly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      oPoly.setAttribute('points', oPolyPoints);
+      oPoly.setAttribute('fill', overlay.fillColor ?? 'transparent');
+      oPoly.setAttribute('fill-opacity', String(overlay.fillOpacity ?? 0.1));
+      oPoly.setAttribute('stroke', overlay.strokeColor ?? '#dc2626');
+      oPoly.setAttribute('stroke-width', String(overlay.strokeWidth ?? 1.5));
+      oPoly.setAttribute('stroke-dasharray', '4 2');
+      svg.appendChild(oPoly);
+
+      oPoints.forEach(p => {
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', String(p.x));
+        dot.setAttribute('cy', String(p.y));
+        dot.setAttribute('r', '3');
+        dot.setAttribute('fill', overlay.strokeColor ?? '#dc2626');
+        svg.appendChild(dot);
+      });
+    });
+  }
+
   // Draw labels
   labelData.forEach(label => {
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -211,6 +252,7 @@ export default function RadarChart({
   title,
   className,
   maxValue = 7,
+  overlays,
 }: RadarChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -228,6 +270,7 @@ export default function RadarChart({
       strokeWidth,
       title,
       maxValue,
+      overlays,
     });
 
     containerRef.current.innerHTML = '';
@@ -238,7 +281,7 @@ export default function RadarChart({
         containerRef.current.innerHTML = '';
       }
     };
-  }, [data, width, height, fillColor, fillOpacity, strokeColor, strokeWidth, title, maxValue, validation.valid]);
+  }, [data, width, height, fillColor, fillOpacity, strokeColor, strokeWidth, title, maxValue, overlays, validation.valid]);
 
   if (!validation.valid) {
     return (

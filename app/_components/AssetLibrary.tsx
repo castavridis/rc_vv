@@ -22,6 +22,10 @@ const TASK_LABELS: Record<AssetTask, string> = {
   animation: 'Animations',
 }
 
+function svgToDataUri(svg: string): string {
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
+}
+
 export default function AssetLibrary({ sessionId, refreshKey, onAddToCanvas }: AssetLibraryProps) {
   const [assets, setAssets] = useState<Asset[]>([])
 
@@ -113,9 +117,16 @@ function AssetTile({ asset, onAddToCanvas }: { asset: Asset; onAddToCanvas?: (ur
   if (asset.task === 'svg' && asset.content) {
     return (
       <div
-        className="w-full aspect-square rounded bg-zinc-50 overflow-hidden p-2"
-        dangerouslySetInnerHTML={{ __html: asset.content }}
-      />
+        className={`relative w-full aspect-square rounded bg-zinc-50 overflow-hidden p-2 group${onAddToCanvas ? ' cursor-pointer' : ''}`}
+        onClick={onAddToCanvas ? () => onAddToCanvas(svgToDataUri(asset.content!), asset.id) : undefined}
+      >
+        <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: asset.content }} />
+        {onAddToCanvas && (
+          <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-zinc-800/80 text-white text-[10px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            + Canvas
+          </span>
+        )}
+      </div>
     )
   }
 
@@ -128,51 +139,57 @@ function AssetTile({ asset, onAddToCanvas }: { asset: Asset; onAddToCanvas?: (ur
   }
 
   if (asset.task === 'animation' && asset.content) {
-    return <AnimationPreview content={asset.content} />
+    return <AnimationPreview content={asset.content} asset={asset} onAddToCanvas={onAddToCanvas} />
   }
 
   return null
 }
 
-function AnimationPreview({ content }: { content: string }) {
+function AnimationPreview({ content, asset, onAddToCanvas }: { content: string; asset: Asset; onAddToCanvas?: (url: string, id: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [showCode, setShowCode] = useState(false)
 
   useEffect(() => {
     if (!containerRef.current) return
 
+    const container = containerRef.current
+
     // Extract SVG content from the animation code
     const svgMatch = content.match(/<svg[\s\S]*?<\/svg>/i)
-    if (!svgMatch) return
+    if (svgMatch) {
+      container.innerHTML = svgMatch[0]
+    } else {
+      // No SVG — create a simple shape as the animation target
+      container.innerHTML = ''
+      const placeholder = document.createElement('div')
+      placeholder.style.cssText = 'width:48px;height:48px;border-radius:8px;background:#a1a1aa;margin:auto;'
+      container.appendChild(placeholder)
+    }
 
-    const container = containerRef.current
-    container.innerHTML = svgMatch[0]
+    // The first child is the element scripts expect as `el`
+    const el = container.firstElementChild as HTMLElement | null
+    if (!el) return
 
-    // Extract and execute any GSAP script
+    // Extract JS to execute: from <script> tags if present, otherwise treat entire content as JS
     const scriptMatch = content.match(/<script[\s\S]*?>([\s\S]*?)<\/script>/i)
-    if (scriptMatch?.[1]) {
-      try {
-        // Load GSAP if not already loaded, then execute
-        const gsapScript = document.createElement('script')
-        gsapScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js'
-        gsapScript.onload = () => {
-          try {
-            const fn = new Function(scriptMatch[1])
-            fn()
-          } catch (e) {
-            console.warn('[AnimationPreview] script error:', e)
-          }
+    const jsCode = scriptMatch?.[1] ?? (svgMatch ? null : content)
+    if (jsCode) {
+      const runScript = () => {
+        try {
+          const fn = new Function('el', jsCode)
+          fn(el)
+        } catch (e) {
+          console.warn('[AnimationPreview] script error:', e)
         }
-        // Only add if GSAP isn't already loaded
+      }
+      try {
         if (typeof (window as unknown as Record<string, unknown>).gsap === 'undefined') {
+          const gsapScript = document.createElement('script')
+          gsapScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js'
+          gsapScript.onload = runScript
           document.head.appendChild(gsapScript)
         } else {
-          try {
-            const fn = new Function(scriptMatch[1])
-            fn()
-          } catch (e) {
-            console.warn('[AnimationPreview] script error:', e)
-          }
+          runScript()
         }
       } catch (e) {
         console.warn('[AnimationPreview] failed to execute animation:', e)
@@ -190,13 +207,24 @@ function AnimationPreview({ content }: { content: string }) {
         ref={containerRef}
         className="w-full aspect-square p-2"
       />
-      <div className="px-2 pb-2">
+      <div className="px-2 pb-2 flex items-center gap-2">
         <button
           onClick={() => setShowCode(!showCode)}
           className="text-[10px] font-mono text-zinc-400 hover:text-zinc-600"
         >
           {showCode ? 'Hide code' : 'Show code'}
         </button>
+        {onAddToCanvas && content.match(/<svg[\s\S]*?<\/svg>/i) && (
+          <button
+            onClick={() => {
+              const svgMatch = content.match(/<svg[\s\S]*?<\/svg>/i)
+              if (svgMatch) onAddToCanvas(svgToDataUri(svgMatch[0]), asset.id)
+            }}
+            className="px-1.5 py-0.5 bg-zinc-800/80 text-white text-[10px] font-mono rounded hover:bg-zinc-700/80 transition-colors"
+          >
+            + Canvas
+          </button>
+        )}
         {showCode && (
           <pre className="text-[10px] font-mono text-zinc-500 overflow-x-auto whitespace-pre-wrap mt-1">
             {content}

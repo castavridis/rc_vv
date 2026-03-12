@@ -1,4 +1,4 @@
-import { TRAITS, type Trait } from './brand'
+import { BRAND_PERSONALITY, DIMENSIONS, TRAITS, type Trait } from './brand'
 
 export type TraitScoreMap = Partial<Record<Trait, number>>
 
@@ -22,6 +22,22 @@ export function aggregateRatings(
     }
   }
   return result
+}
+
+/** Compute dimension scores (0-5) from a trait score map */
+export function dimensionScoresFromProfile(
+  profile: TraitScoreMap
+): Record<string, number> {
+  const scores: Record<string, number> = {}
+  for (const dimension of DIMENSIONS) {
+    const allTraits = Object.values(BRAND_PERSONALITY[dimension]).flat() as Trait[]
+    const scored = allTraits.filter(t => profile[t] !== undefined)
+    const applies = scored.filter(t => (profile[t]!) >= 0.5).length
+    scores[dimension] = scored.length > 0
+      ? Math.round((applies / allTraits.length) * 5 * 10) / 10
+      : 0
+  }
+  return scores
 }
 
 /** Return top N traits by score, descending */

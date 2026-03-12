@@ -14,6 +14,7 @@ import AssessmentResult from '../../_components/AssessmentResult'
 import GenerationControls from '../../_components/GenerationControls'
 import PolinePalette from '../../_components/PolinePalette'
 import CanvasSection from '../../_components/CanvasSection'
+import D10Die from '../../_components/D10Die'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -102,6 +103,9 @@ export default async function SessionPage({ params }: Props) {
             <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-4">
               Brand Profile
             </h2>
+            <div className="flex justify-center mb-4">
+              <D10Die scores={dimensionScores} size={160} autoRotate interactive />
+            </div>
             <RadarChart
               data={dimensionScores}
               width={280}

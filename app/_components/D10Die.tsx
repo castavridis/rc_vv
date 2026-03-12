@@ -85,7 +85,6 @@ function qToMat4(q: Quat): Float32Array {
 // ── D10 Geometry ──────────────────────────────────────────────
 const NN = 5, R = 1.0
 const RATIO = 9.4724
-const DEFAULT_H = 0.155 * RATIO
 
 type Vec3 = [number, number, number]
 
@@ -583,7 +582,7 @@ const PARAMS = {
   edgeCol: '#ffffff',
   edgeAlpha: 0.0,
   zoom: 8.5,
-  autoSpeed: 1.68,
+  autoSpeed: 0.68,
 }
 
 export default function D10Die({
@@ -669,10 +668,10 @@ export default function D10Die({
       'uRadarGlow', 'uRadarFresnel', 'uTime', 'uL1Dir', 'uL1Int',
     ])
 
-    // Build geometry
-    const innerMesh = buildFlat(DEFAULT_H)
-    const outerMesh = buildSmooth(DEFAULT_H)
-    const edgeMesh = buildEdges(DEFAULT_H)
+    // Build geometry using PARAMS.poleH
+    const innerMesh = buildFlat(PARAMS.poleH)
+    const outerMesh = buildSmooth(PARAMS.poleH)
+    const edgeMesh = buildEdges(PARAMS.poleH)
 
     const innerPosBuf = mkBuf(gl, innerMesh.positions)
     const innerNrmBuf = mkBuf(gl, innerMesh.normals)
@@ -682,7 +681,10 @@ export default function D10Die({
     const radarPosBuf = mkBuf(gl, new Float32Array(90 * 3))
     const radarNrmBuf = mkBuf(gl, new Float32Array(90 * 3))
 
-    const initialQuat = qNorm(qMul(qAxis(1, 0, 0, 0.4), qAxis(0, 1, 0, 0.3)))
+    // Orient die: pole horizontal, Sophistication edge (ring index 4, angle 288°) at top
+    // Step 1: rotate around Y by +2π/5 to bring Sophistication vertex to +X
+    // Step 2: rotate around Z by +π/2 to tilt +X up to +Y (pole goes from Y to -X)
+    const initialQuat = qNorm(qMul(qAxis(0, 0, 1, Math.PI / 2), qAxis(0, 1, 0, 2 * Math.PI / 5)))
 
     stateRef.current = {
       gl,
