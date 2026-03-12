@@ -5,6 +5,8 @@ import supabase from '../../_actions/supabase'
 import { computeDimensionScores } from '../../_lib/dimensionScores'
 import { cosineSimilarity } from '../../_lib/artwork-similarity'
 import { type Trait } from '../../_lib/brand'
+import { findSimilarItems } from '../../_lib/similar-items'
+import SimilarItems from '../../_components/SimilarItems'
 import SessionTitle from '../../_components/SessionTitle'
 import DimensionSliders from '../../_components/DimensionSliders'
 import RadarChart from '../../_components/RadarChart'
@@ -203,6 +205,23 @@ export default async function SessionPage({ params }: Props) {
       <div className="mt-12 space-y-8">
         <CanvasSection sessionId={session.id} />
       </div>
+
+      {traits && traits.length > 0 && (
+        <SimilarItemsSection sessionId={session.id} userId={user.id} traits={traits} dimensionScores={dimensionScores} />
+      )}
     </div>
   )
+}
+
+async function SimilarItemsSection({ sessionId, userId, traits, dimensionScores }: {
+  sessionId: string
+  userId: string
+  traits: { trait: string; score: number }[]
+  dimensionScores: import('../../_lib/dimensionScores').DimensionScores
+}) {
+  const traitMap: Record<string, number> = {}
+  for (const t of traits) traitMap[t.trait] = t.score
+
+  const similarItems = await findSimilarItems(sessionId, userId, traitMap, dimensionScores)
+  return <SimilarItems data={similarItems} />
 }
