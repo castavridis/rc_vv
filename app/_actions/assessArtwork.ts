@@ -31,7 +31,17 @@ export async function assessArtwork(
 
   // Look up persona
   const persona = ASSESSMENT_PERSONAS.find(p => p.id === (personaId ?? 'none'))
-  const personaPrompt = persona?.prompt ?? ''
+
+  const { data: promptConfig } = await supabase
+    .from('prompt_configs')
+    .select('prompt_text')
+    .eq('user_id', Number(user.id))
+    .eq('model', model)
+    .eq('persona', personaId ?? 'none')
+    .eq('is_active', true)
+    .maybeSingle()
+
+  const personaPrompt = promptConfig?.prompt_text ?? (persona?.prompt ?? '')
   const personaLabel = persona?.id !== 'none' ? persona?.label : undefined
 
   try {

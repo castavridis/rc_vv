@@ -7,6 +7,7 @@ import { dimensionScoresFromProfile } from '../../_lib/taste-profile'
 import ArtworkRatingSection from '../../_components/ArtworkRatingSection'
 import ArtworkMetadata from '../../_components/ArtworkMetadata'
 import RadarChart from '../../_components/RadarChart'
+import BulkAssessControl from '../../_components/BulkAssessControl'
 import Link from 'next/link'
 
 interface Props {
@@ -34,8 +35,12 @@ export default async function ArtworkPage({ params }: Props) {
   }
   const hasHumanRatings = DIMS.some(d => (existingRatings[d]?.score ?? 0) > 0)
 
+  const sortedSyntheticProfiles = [...syntheticProfiles].sort((a, b) =>
+    a.modelLabel.localeCompare(b.modelLabel) || a.personaLabel.localeCompare(b.personaLabel)
+  )
+
   const OVERLAY_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#d97706', '#9333ea', '#0891b2']
-  const radarOverlays = syntheticProfiles.map((rater, i) => ({
+  const radarOverlays = sortedSyntheticProfiles.map((rater, i) => ({
     data: dimensionScoresFromProfile(rater.profile),
     strokeColor: OVERLAY_COLORS[i % OVERLAY_COLORS.length],
     fillColor: OVERLAY_COLORS[i % OVERLAY_COLORS.length],
@@ -91,13 +96,17 @@ export default async function ArtworkPage({ params }: Props) {
             />
           </div>
 
-          {(hasHumanRatings || syntheticProfiles.length > 0) && (
+          <div className="border-t border-zinc-100 pt-6">
+            <BulkAssessControl artworkIds={[artwork.id]} />
+          </div>
+
+          {(hasHumanRatings || sortedSyntheticProfiles.length > 0) && (
             <div className="border-t border-zinc-100 pt-6">
               <h2 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-3">
                 Ratings Comparison
               </h2>
               <RadarChart
-                data={hasHumanRatings ? humanDimScores : dimensionScoresFromProfile(syntheticProfiles[0]?.profile ?? {})}
+                data={hasHumanRatings ? humanDimScores : dimensionScoresFromProfile(sortedSyntheticProfiles[0]?.profile ?? {})}
                 width={280}
                 height={280}
                 maxValue={5}
@@ -114,7 +123,7 @@ export default async function ArtworkPage({ params }: Props) {
                     <span className="text-[10px] font-mono text-zinc-600">You</span>
                   </div>
                 )}
-                {syntheticProfiles.map((rater, i) => (
+                {sortedSyntheticProfiles.map((rater, i) => (
                   <div key={`${rater.model}::${rater.persona}`} className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ background: OVERLAY_COLORS[i % OVERLAY_COLORS.length] }} />
                     <span className="text-[10px] font-mono text-zinc-600">

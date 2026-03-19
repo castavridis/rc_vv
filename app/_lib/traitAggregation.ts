@@ -65,7 +65,8 @@ export function parseReasonedResponse(content: string): Record<string, { score: 
       }
     }
     return result
-  } catch {
+  } catch (err) {
+    console.error('[parseReasonedResponse] JSON parse failed:', err, '\nRaw content:', content.slice(0, 500))
     return null
   }
 }

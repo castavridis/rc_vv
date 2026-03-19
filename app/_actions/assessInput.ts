@@ -33,7 +33,7 @@ export async function assessTextInput(formData: FormData): Promise<AssessResult>
     const content = await callOpenRouter(TEXT_MODEL, [
       { role: 'system', content: system },
       { role: 'user', content: userMsg },
-    ])
+    ], 300)
 
     const scores = parseModelResponse(content)
     if (!scores) throw new Error('Failed to parse trait scores from model response')
@@ -77,7 +77,7 @@ export async function assessImageInput(formData: FormData): Promise<AssessResult
     const content = await callOpenRouter(IMAGE_MODEL, [
       { role: 'system', content: system },
       { role: 'user', content: userContent },
-    ])
+    ], 300)
 
     const scores = parseModelResponse(content)
     if (!scores) throw new Error('Failed to parse trait scores from model response')
