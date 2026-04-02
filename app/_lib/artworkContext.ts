@@ -5,6 +5,7 @@ import { rankBySimilarity, rankByOpposition } from './artwork-similarity'
 import { type Trait } from './brand'
 
 export interface ArtworkContextItem {
+  id: string
   title: string
   artist?: string | null
   ratings: TraitScoreMap
@@ -53,13 +54,13 @@ export async function getArtworkContextForUser(userId: string): Promise<ArtworkC
   for (const a of similar) {
     const meta = artworkMeta.get(a.artworkId)
     if (!meta) continue
-    result.push({ ...meta, ratings: byArtwork[a.artworkId], direction: 'same' })
+    result.push({ id: a.artworkId, ...meta, ratings: byArtwork[a.artworkId], direction: 'same' })
   }
 
   for (const a of opposing) {
     const meta = artworkMeta.get(a.artworkId)
     if (!meta) continue
-    result.push({ ...meta, ratings: byArtwork[a.artworkId], direction: 'opposing' })
+    result.push({ id: a.artworkId, ...meta, ratings: byArtwork[a.artworkId], direction: 'opposing' })
   }
 
   return result

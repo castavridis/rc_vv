@@ -17,6 +17,7 @@ export default async function ErrorsPage() {
       <div className="flex items-center justify-between mb-6">
         <Link href="/library" className="text-xs text-zinc-400 hover:text-zinc-600">← Library</Link>
         <div className="flex gap-4">
+          <Link href="/admin/explore" className="text-xs text-zinc-400 hover:text-zinc-600">Explore</Link>
           <Link href="/admin/prompts" className="text-xs text-zinc-400 hover:text-zinc-600">Prompts</Link>
         </div>
       </div>
